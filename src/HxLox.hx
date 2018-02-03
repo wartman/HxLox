@@ -37,7 +37,7 @@ class HxLox {
 
   private static function runPrompt() {
     var input = Sys.stdin();
-    Sys.println('Starting RPEL. `Ctrl C` to exit.');
+    Sys.println('Starting REPL. `Ctrl C` to exit.');
     while (true) {
       Sys.print('> ');
       run(input.readLine());
@@ -78,11 +78,6 @@ class HxLox {
   }
 
   private static function report(line:Int, where:String, message:String) {
-    // todo: implement error handling mentioned here:
-    // http://craftinginterpreters.com/scanning.html#error-handling
-    // we did it in Qiq :). Kinda.
-    //
-    // Possibly move it into an ErrorReporter?
     Sys.println('[line $line] Error${where}: ${message}');
     hadError = true;
   }
