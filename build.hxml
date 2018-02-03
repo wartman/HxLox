@@ -1,0 +1,4 @@
+-main HxLox
+-cp src
+
+-neko bin/hxlox.n
