@@ -1,7 +1,5 @@
 package;
 
-import haxe.io.Bytes;
-import haxe.io.BufferInput;
 import sys.io.File;
 import hxlox.Token;
 import hxlox.Parser;
