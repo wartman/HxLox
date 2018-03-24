@@ -9,10 +9,6 @@ class Expression implements Stmt {
   var expression:Expr;
 }
 
-class Print implements Stmt {
-  var expression:Expr;
-}
-
 class Import implements Stmt {
   var path:Token;
   var imports:Array<Token>;

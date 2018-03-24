@@ -103,7 +103,6 @@ class Parser {
   }
 
   private function statement():Stmt {
-    if (match([ TokPrint ])) return printStatement();
     if (match([ TokIf ])) return ifStatement();
     if (match([ TokWhile ])) return whileStatement();
     if (match([ TokFor ])) return forStatement();
@@ -191,12 +190,6 @@ class Parser {
     }
     consume(TokSemicolon, "Expect ';' after return value.");
     return new Stmt.Return(keyword, value);
-  }
-
-  private function printStatement():Stmt {
-    var value = expression();
-    consume(TokSemicolon, "Expect ';' after value.");
-    return new Stmt.Print(value);
   }
 
   private function expressionStatement():Stmt {
@@ -437,7 +430,7 @@ class Parser {
 
       switch (peek().type) {
         case TokClass | TokFun | TokVar | TokFor | TokIf |
-             TokWhile | TokPrint | TokReturn: return;
+             TokWhile | TokReturn: return;
         default: advance();
       }
     }

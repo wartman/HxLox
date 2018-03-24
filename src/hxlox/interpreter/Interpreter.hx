@@ -17,7 +17,10 @@ class Interpreter
 
   public function new(?moduleFinder:Loader.ModuleFinder) {
     loader = new Loader(this, moduleFinder);
-    globals.define('clock', new hxlox.interpreter.foreign.Clock());
+
+    // Setup default libraries
+    globals.define('System', new hxlox.interpreter.foreign.System());
+    
     environment = globals;
   }
 
@@ -156,12 +159,6 @@ class Interpreter
     while(isTruthy(evaluate(stmt.condition))) {
       execute(stmt.body);
     }
-    return null;
-  }
-
-  public function visitPrintStmt(stmt:Stmt.Print):Dynamic {
-    var out = evaluate(stmt.expression);
-    Sys.println(Std.string(out));
     return null;
   }
 
@@ -311,10 +308,10 @@ class Interpreter
 
   public function visitGetExpr(expr:Expr.Get):Dynamic {
     var object = evaluate(expr.object);
-    if (Std.is(object, Instance)) {
+    if (Std.is(object, Object)) {
       return (cast object).get(expr.name);
     }
-    throw new RuntimeError(expr.name, "Only instances have properties.");
+    throw new RuntimeError(expr.name, "Only objects have properties.");
   }
 
   private function isTruthy(obj:Dynamic):Bool {

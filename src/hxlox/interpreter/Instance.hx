@@ -2,7 +2,7 @@ package hxlox.interpreter;
 
 import hxlox.Token;
 
-class Instance {
+class Instance implements Object {
 
   private var cls:Class;
   private var fields:Map<String, Dynamic> = new Map();

@@ -1,12 +1,12 @@
 class Doughnut {
   cook() {
-    print "Fry until golden brown.";
+    System.print("Fry until golden brown.");
   }
 }
 
 class BostonCream < Doughnut {
   cook() {
     super.cook();
-    print "Pipe full of custard and coat with chocolate.";
+    System.print("Pipe full of custard and coat with chocolate.");
   }
 }

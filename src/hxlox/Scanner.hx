@@ -14,7 +14,6 @@ class Scanner {
     "if" => TokIf,
     "null" => TokNull,
     "or" => TokOr,
-    "print" => TokPrint,
     "return" => TokReturn,
     "super" => TokSuper,
     "this" => TokThis,

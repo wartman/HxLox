@@ -5,7 +5,8 @@ class Magic < Doughnut {
   
   cook() {
     super.cook();
-    print "Cooked " + name;
+    System.print("Cooked " + name);
+    System.print(System.getCwd());
   }
 
 }

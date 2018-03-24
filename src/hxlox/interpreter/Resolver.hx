@@ -48,10 +48,6 @@ class Resolver
     if (stmt.elseBranch != null) resolveStatement(stmt.elseBranch);
   }
 
-  public function visitPrintStmt(stmt:Stmt.Print):Void {
-    resolveExpr(stmt.expression);
-  }
-
   public function visitReturnStmt(stmt:Stmt.Return):Void {
     if (currentFunction.equals(FunNone)) {
       HxLox.error(stmt.keyword, "Cannot return from top-level code.");
