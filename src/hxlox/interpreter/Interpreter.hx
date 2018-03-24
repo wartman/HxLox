@@ -12,9 +12,11 @@ class Interpreter
 
   public var globals:Environment = new Environment();
   private var environment:Environment;
+  private var loader:Loader;
   private var locals:Map<Expr, Int> = new Map();
 
-  public function new() {
+  public function new(?moduleFinder:Loader.ModuleFinder) {
+    loader = new Loader(this, moduleFinder);
     globals.define('clock', new hxlox.interpreter.foreign.Clock());
     environment = globals;
   }
@@ -27,6 +29,21 @@ class Interpreter
     } catch (error:RuntimeError) {
       HxLox.runtimeError(error);
     }
+  }
+
+  public function interpretModule(stmts:Array<Stmt>):Environment {
+    var previous = environment;
+    environment = new Environment(globals);
+    try {
+      for (stmt in stmts) {
+        execute(stmt);
+      }
+    } catch (error:RuntimeError) {
+      HxLox.runtimeError(error);
+    }
+    var closure = environment;
+    environment = previous;
+    return closure;
   }
 
   public function resolve(expr:Expr, depth:Int) {
@@ -88,17 +105,35 @@ class Interpreter
     }
 
     var methods:Map<String, Function> = new Map();
+    var staticMethods:Map<String, Function> = new Map();
     for (method in stmt.methods) {
       var fun = new Function(method, environment, method.name.lexeme == 'init');
       methods.set(method.name.lexeme, fun);
     }
-    var cls = new Class(stmt.name.lexeme, (cast superclass), methods);
+    for (method in stmt.staticMethods) {
+      var fun = new Function(method, environment, method.name.lexeme == 'init');
+      staticMethods.set(method.name.lexeme, fun);
+    }
+    var cls = new Class(stmt.name.lexeme, (cast superclass), methods, staticMethods);
 
     if (superclass != null) {
       environment = environment.enclosing;
     }
 
     environment.assign(stmt.name, cls);
+    return null;
+  }
+
+  public function visitImportStmt(stmt:Stmt.Import):Dynamic {
+    var module = loader.get(stmt.path.literal);
+    for (name in stmt.imports) {
+      try {
+        var value = module.get(name);
+        environment.define(name.lexeme, value);
+      } catch (e:RuntimeError) {
+        throw new RuntimeError(name, 'The module [${stmt.path.literal}] does not export: ${name.lexeme}');
+      }
+    }
     return null;
   }
 

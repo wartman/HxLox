@@ -26,6 +26,7 @@ class Parser {
       if (match([ TokVar ])) return varDeclaration();
       if (match([ TokFun ])) return functionDeclaration('function');
       if (match([ TokClass ])) return classDeclaration();
+      if (match([ TokImport ])) return importDeclaration();
       return statement();
     } catch (error:ParserError) {
       synchronize();
@@ -75,12 +76,30 @@ class Parser {
     consume(TokLeftBrace, "Expect '{' before class body.");
 
     var methods:Array<Stmt.Fun> = [];
+    var staticMethods:Array<Stmt.Fun> = [];
     while(!check(TokRightBrace) && !isAtEnd()) {
-      methods.push(cast functionDeclaration('method'));
+      if (match([ TokStatic ])) {
+        staticMethods.push(cast functionDeclaration('method'));
+      } else {
+        methods.push(cast functionDeclaration('method'));
+      }
     }
     consume(TokRightBrace, "Expect '}' after class body.");
 
-    return new Stmt.Class(name, superclass, methods);
+    return new Stmt.Class(name, superclass, methods, staticMethods);
+  }
+
+  private function importDeclaration():Stmt {
+    var path = consume(TokString, "Expect a string after 'import'");
+    consume(TokFor, "Expect a 'for' after an import path");
+    var items:Array<Token> = [];
+    if (!check(TokSemicolon)) {
+      do {
+        items.push(consume(TokIdentifier, "Expect an identifier"));
+      } while (match([ TokComma ]));
+    }
+    consume(TokSemicolon, "Expect a semicolon after import list");
+    return cast new Stmt.Import(path, items);
   }
 
   private function statement():Stmt {

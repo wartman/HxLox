@@ -4,6 +4,7 @@ import sys.io.File;
 import hxlox.Token;
 import hxlox.Parser;
 import hxlox.Scanner;
+import hxlox.interpreter.Loader;
 import hxlox.interpreter.RuntimeError;
 import hxlox.interpreter.Resolver;
 import hxlox.interpreter.Interpreter;
@@ -42,6 +43,10 @@ class HxLox {
       hadError = false;
     }
   }
+
+  // public static function findModule(name:String) {
+  //   // todo
+  // }
 
   private static function run(source:String) {
     var scanner = new Scanner(source);

@@ -20,7 +20,9 @@ class Scanner {
     "this" => TokThis,
     "true" => TokTrue,
     "var" => TokVar,
-    "while" => TokWhile
+    "while" => TokWhile,
+    "import" => TokImport,
+    "static" => TokStatic
   ];
 
   private var source:String;
@@ -133,13 +135,6 @@ class Scanner {
       while (isDigit(peek())) advance();
     }
     addToken(TokNumber, Std.parseFloat(source.substring(start, current)));
-  }
-
-  private function endsStatement(token:Token):Bool {
-    return switch (token.type) {
-      case TokLeftBrace | TokLeftParen | TokDot | TokComma: false;
-      default: true;
-    }
   }
 
   private function isDigit(c:String):Bool {

@@ -171,6 +171,13 @@ class Resolver
     currentClass = enclosingClass;
   }
 
+  public function visitImportStmt(stmt:Stmt.Import):Void {
+    for (name in stmt.imports) {
+      define(name);
+      declare(name);
+    }
+  }
+
   public function visitVariableExpr(expr:Expr.Variable):Void {
     if (!scopes.empty() && scopes[scopes.length - 1].get(expr.name.lexeme) == false) {
       HxLox.error(expr.name, "Cannot read local variable in its own initializer.");

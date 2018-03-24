@@ -24,3 +24,11 @@ Interpret a file:
 ```
 
 You could also compile the code with any other Haxe target that supports the `sys` package.
+
+Notes
+-----
+
+This branch extends Lox a bit to add the following features:
+
+- Imports
+- Static methods

@@ -33,6 +33,8 @@ enum TokenType {
   TokTrue;
   TokVar;
   TokWhile;
+  TokStatic;
+  TokImport;
 
   // One or two character tokens
   TokBang;

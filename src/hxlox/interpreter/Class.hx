@@ -1,15 +1,18 @@
 package hxlox.interpreter;
 
-class Class implements Callable {
+class Class extends Instance implements Callable {
 
   public var name:String;
-  private var methods:Map<String, Function>; 
+  private var methods:Map<String, Function>;
+  private var staticMethods:Map<String, Function>;
   private var superclass:Class;
 
-  public function new(name:String, superclass:Class, methods:Map<String, Function>) {
+  public function new(name:String, superclass:Class, methods:Map<String, Function>, staticMethods:Map<String, Function>) {
     this.name = name;
     this.superclass = superclass;
     this.methods = methods;
+    this.staticMethods = staticMethods;
+    super(this);
   }
 
   public function arity():Int {
@@ -28,6 +31,7 @@ class Class implements Callable {
   }
 
   public function findMethod(instance:Instance, name:String) {
+    var methods = instance == this ? this.staticMethods : this.methods;
     if (methods.exists(name)) {
       return methods.get(name).bind(instance);
     }
@@ -37,7 +41,7 @@ class Class implements Callable {
     return null;
   }
 
-  public function toString() {
+  override public function toString() {
     return this.name;
   }
 

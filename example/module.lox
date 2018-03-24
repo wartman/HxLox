@@ -1,0 +1,17 @@
+import "test" for Doughnut, BostonCream;
+import "stuff" for name;
+
+class Magic < Doughnut {
+  
+  cook() {
+    super.cook();
+    print "Cooked " + name;
+  }
+
+}
+
+var test = BostonCream();
+test.cook();
+
+var magic = Magic();
+magic.cook();

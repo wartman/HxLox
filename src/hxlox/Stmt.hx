@@ -13,6 +13,11 @@ class Print implements Stmt {
   var expression:Expr;
 }
 
+class Import implements Stmt {
+  var path:Token;
+  var imports:Array<Token>;
+}
+
 class Var implements Stmt {
   var name:Token;
   var initializer:Expr;
@@ -48,4 +53,5 @@ class Class implements Stmt {
   var name:Token;
   var superclass:Expr;
   var methods:Array<Stmt.Fun>;
+  var staticMethods:Array<Stmt.Fun>;
 }

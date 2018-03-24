@@ -10,5 +10,3 @@ class BostonCream < Doughnut {
     print "Pipe full of custard and coat with chocolate.";
   }
 }
-
-BostonCream().cook();
