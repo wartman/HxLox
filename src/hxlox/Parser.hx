@@ -156,7 +156,7 @@ class Parser {
     if (!check(TokRightParen)) {
       increment = expression();
     }
-    consume(TokRightParen, "Expect ';' after loop condition.");
+    consume(TokRightParen, "Expect ')' after loop condition.");
 
     var body = statement();
 
@@ -378,7 +378,39 @@ class Parser {
       return new Expr.Grouping(expr);
     }
 
+    if (match([ TokLeftBracket ])) {
+      return arrayLiteral();
+    }
+
+    if (match([ TokLeftBrace ])) {
+      return blockOrObjectLiteral();
+    }
+
     throw error(peek(), 'Expect expression');
+  }
+
+  private function arrayLiteral():Expr {
+    var values:Array<Expr> = parseList(TokComma, TokRightBracket);
+    var end = consume(TokRightBracket, "Expect ']' after values.");
+    return new Expr.ArrayLiteral(end, values);
+  }
+
+  private function blockOrObjectLiteral():Expr {
+    // For now, always assume object literal.
+    var keys:Array<Token> = [];
+    var values:Array<Expr> = [];
+
+    if (!check(TokRightBrace)) {
+      do {
+        keys.push(consume(TokIdentifier, "Expect identifiers for object keys"));
+        consume(TokColon, "Expect colons after object keys");
+        values.push(expression()); 
+      } while (match([ TokComma ]));
+    }
+
+    var end = consume(TokRightBrace, "Expect '}' at the end of an object literal");
+
+    return new Expr.ObjectLiteral(end, keys, values);
   }
 
   private function match(types:Array<TokenType>):Bool {
@@ -434,6 +466,16 @@ class Parser {
         default: advance();
       }
     }
+  }
+
+  private function parseList(sep:TokenType, end:TokenType):Array<Expr> {
+    var exprs:Array<Expr> = [];
+    if (!check(end)) {
+      do {
+        exprs.push(expression());
+      } while (match([ sep ]));
+    }
+    return exprs;
   }
 
 }

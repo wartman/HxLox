@@ -186,6 +186,18 @@ class Resolver
     resolveLocal(expr, expr.name);
   }
 
+  public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):Void {
+    for (value in expr.values) {
+      resolveExpr(value);
+    }
+  }
+
+  public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):Void {
+    for (value in expr.values) {
+      resolveExpr(value);
+    }
+  }
+
   private function resolveStatement(stmt:Stmt) {
     stmt.accept(this);
   }

@@ -1,1 +1,11 @@
 var name = "Fred";
+var foods = [ "Bread", "Muffin" ];
+var spreads = {
+  good: [ "Cheese" ],
+  bad: "Eggs"
+};
+
+// Note: right now, the following will fail as it will
+// be assumed to be a block.
+// { foo: "bar" };
+// Need to think on how to handle that :P

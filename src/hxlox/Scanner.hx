@@ -54,11 +54,14 @@ class Scanner {
       case ')': addToken(TokRightParen);
       case '{': addToken(TokLeftBrace);
       case '}': addToken(TokRightBrace);
+      case '[': addToken(TokLeftBracket);
+      case ']': addToken(TokRightBracket);
       case ',': addToken(TokComma);
       case '.': addToken(TokDot);
       case '-': addToken(TokMinus);
       case '+': addToken(TokPlus);
       case ';': addToken(TokSemicolon);
+      case ':': addToken(TokColon);
       case '*': addToken(TokStar);
       case '!': addToken(match('=') ? TokBangEqual : TokBang);
       case '=': addToken(match('=') ? TokEqualEqual : TokEqual);

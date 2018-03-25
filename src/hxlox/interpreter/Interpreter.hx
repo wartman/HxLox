@@ -308,6 +308,26 @@ class Interpreter
     throw new RuntimeError(expr.name, "Only objects have properties.");
   }
 
+  public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):Dynamic {
+    var values:Array<Dynamic> = [];
+    for (value in expr.values) {
+      values.push(evaluate(value));
+    }
+    return new ArrayLiteralType(values);
+  }
+
+  public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):Dynamic {
+    var keys:Array<String> = [];
+    var values:Array<Dynamic> = [];
+    for (key in expr.keys) {
+      keys.push(key.lexeme);
+    }
+    for (value in expr.values) {
+      values.push(evaluate(value));
+    }
+    return new ObjectLiteralType(keys, values);
+  }
+
   private function isTruthy(obj:Dynamic):Bool {
     if (obj == null) return false;
     if (Std.is(obj, Bool)) return obj;

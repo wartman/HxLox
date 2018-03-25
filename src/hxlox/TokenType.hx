@@ -7,10 +7,13 @@ enum TokenType {
   TokRightParen;
   TokLeftBrace;
   TokRightBrace;
+  TokLeftBracket;
+  TokRightBracket;
   TokComma;
   TokDot;
   TokMinus;
   TokPlus;
+  TokColon;
   TokSemicolon;
   TokNewline;
   TokSlash;

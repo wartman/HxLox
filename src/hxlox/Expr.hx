@@ -56,6 +56,17 @@ class Literal implements Expr {
   var value:Dynamic;
 }
 
+class ArrayLiteral implements Expr {
+  var end:Token;
+  var values:Array<Expr>;
+}
+
+class ObjectLiteral implements Expr {
+  var end:Token;
+  var keys:Array<Token>;
+  var values:Array<Expr>;
+}
+
 class Unary implements Expr {
   var op:Token;
   var right:Expr;

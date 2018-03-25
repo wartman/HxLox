@@ -32,4 +32,5 @@ This branch extends Lox a bit to add the following features:
 
 - Imports
 - Static methods
+- Array and Object literals.
 - `print` is no longer built-in -- use `System.print` instead.

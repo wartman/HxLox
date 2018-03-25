@@ -1,0 +1,41 @@
+class Runner {
+
+  init() {
+    this.tests = [];
+  }
+
+  add(test) {
+    this.tests.push(test);
+  }
+
+  run() {
+    for (var i = 0; i < this.tests.length(); i = i + 1) {
+      var test = this.tests.get(i);
+      test.run();
+    }
+  }
+  
+}
+
+class Assert {
+  
+  /// Note working yet (we can't throw errors), but you get the idea.
+  static equals(a, b) {
+    if (a == b) {
+      System.print("Equal");
+    } else {
+      System.print("Not equal");
+    }
+  }
+
+}
+
+class TestCase {
+  
+  init() {}
+
+  run() {
+    // noop
+  }
+
+}
