@@ -4,7 +4,7 @@ import sys.io.File;
 import hxlox.Token;
 import hxlox.Parser;
 import hxlox.Scanner;
-import hxlox.interpreter.Loader;
+import hxlox.interpreter.DefaultModuleLoader;
 import hxlox.interpreter.RuntimeError;
 import hxlox.interpreter.Resolver;
 import hxlox.interpreter.Interpreter;
@@ -28,8 +28,19 @@ class HxLox {
   }
 
   private static function runFile(path:String) {
-    var bytes = File.getBytes(Path.join([ Sys.getCwd(), path ]).normalize());
-    run(bytes.toString());
+    var path = Path.join([ Sys.getCwd(), path ]).normalize();
+    if (path.extension() == '') {
+      path = path.withExtension('lox');
+    }
+    var root = path.directory().addTrailingSlash();
+    var bytes = File.getBytes(path);
+
+    Sys.println('Running: ${path}');
+    Sys.println('Program root: ${root}');
+    Sys.println('---');
+
+    run(bytes.toString(), root);
+    
     if (hadError) Sys.exit(65);
     if (hadRuntimeError) Sys.exit(70);
   }
@@ -39,21 +50,18 @@ class HxLox {
     Sys.println('Starting REPL. `Ctrl C` to exit.');
     while (true) {
       Sys.print('> ');
-      run(input.readLine());
+      run(input.readLine(), Sys.getCwd());
       hadError = false;
     }
   }
 
-  // public static function findModule(name:String) {
-  //   // todo
-  // }
-
-  private static function run(source:String) {
+  private static function run(source:String, root:String) {
+    var loader = new DefaultModuleLoader(root);
     var scanner = new Scanner(source);
     var tokens = scanner.scanTokens();
     var parser = new Parser(tokens);
     var stmts = parser.parse();
-    var interpreter = new Interpreter();
+    var interpreter = new Interpreter(loader);
     var resolver = new Resolver(interpreter);
 
     resolver.resolve(stmts);

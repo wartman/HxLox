@@ -1,9 +1,14 @@
 package hxlox.interpreter;
 
+import sys.io.File;
 import hxlox.Expr;
 import hxlox.TokenType;
 import hxlox.ExprVisitor;
 import hxlox.StmtVisitor;
+import hxlox.Scanner;
+import hxlox.Parser;
+
+using haxe.io.Path;
 
 class Interpreter 
   implements ExprVisitor<Dynamic> 
@@ -12,11 +17,15 @@ class Interpreter
 
   public var globals:Environment = new Environment();
   private var environment:Environment;
-  private var loader:Loader;
+  private var modules:Map<String, Environment> = new Map();
+  private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
 
-  public function new(?moduleFinder:Loader.ModuleFinder) {
-    loader = new Loader(this, moduleFinder);
+  public function new(?loader:ModuleLoader) {
+    if (loader == null) {
+      loader = new DefaultModuleLoader(Sys.getCwd());
+    }
+    this.loader = loader;
 
     // Setup default libraries
     globals.define('System', new hxlox.interpreter.foreign.System());
@@ -32,21 +41,6 @@ class Interpreter
     } catch (error:RuntimeError) {
       HxLox.runtimeError(error);
     }
-  }
-
-  public function interpretModule(stmts:Array<Stmt>):Environment {
-    var previous = environment;
-    environment = new Environment(globals);
-    try {
-      for (stmt in stmts) {
-        execute(stmt);
-      }
-    } catch (error:RuntimeError) {
-      HxLox.runtimeError(error);
-    }
-    var closure = environment;
-    environment = previous;
-    return closure;
   }
 
   public function resolve(expr:Expr, depth:Int) {
@@ -128,7 +122,7 @@ class Interpreter
   }
 
   public function visitImportStmt(stmt:Stmt.Import):Dynamic {
-    var module = loader.get(stmt.path.literal);
+    var module = getModule(stmt.path.literal);
     for (name in stmt.imports) {
       try {
         var value = module.get(name);
@@ -348,6 +342,32 @@ class Interpreter
     } else {
       return environment.get(name);
     }
+  }
+
+  private function getModule(name:String) {
+    if (!modules.exists(name)) {
+      loadModule(name);
+    }
+    return modules.get(name);
+  }
+
+  private function loadModule(name:String) {
+    var path = loader.find(name);
+    var source = loader.load(path);
+    var previous = environment;
+
+    var scanner = new Scanner(source);
+    var tokens = scanner.scanTokens();
+    var parser = new Parser(tokens);
+    var stmts = parser.parse();
+    var resolver = new Resolver(this);
+
+    resolver.resolve(stmts);
+    environment = new Environment(globals);
+    interpret(stmts);
+    modules.set(name, environment);
+
+    environment = previous;
   }
 
 }

@@ -9,6 +9,7 @@ class System implements Object {
 
   private var methods:Map<String, Callable> = new Map();
 
+  // Think of a better way to do all this.
   public function new() {
     methods.set('print', new Print());
     methods.set('getCwd', new GetCwd());
