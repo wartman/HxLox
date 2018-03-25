@@ -10,8 +10,13 @@ class Expression implements Stmt {
 }
 
 class Import implements Stmt {
-  var path:Token;
+  var path:Array<Token>;
   var imports:Array<Token>;
+}
+
+class Module implements Stmt {
+  var path:Array<Token>;
+  var exports:Array<Token>;
 }
 
 class Var implements Stmt {

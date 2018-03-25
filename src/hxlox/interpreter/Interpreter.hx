@@ -17,7 +17,7 @@ class Interpreter
 
   public var globals:Environment = new Environment();
   private var environment:Environment;
-  private var modules:Map<String, Environment> = new Map();
+  private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
 
@@ -122,15 +122,21 @@ class Interpreter
   }
 
   public function visitImportStmt(stmt:Stmt.Import):Dynamic {
-    var module = getModule(stmt.path.literal);
+    var module = getModule(stmt.path);
     for (name in stmt.imports) {
-      try {
-        var value = module.get(name);
-        environment.define(name.lexeme, value);
-      } catch (e:RuntimeError) {
-        throw new RuntimeError(name, 'The module [${stmt.path.literal}] does not export: ${name.lexeme}');
-      }
+      var value = module.get(name);
+      environment.define(name.lexeme, value);
     }
+    return null;
+  }
+
+  public function visitModuleStmt(stmt:Stmt.Module):Dynamic {
+    var name = stmt.path.map(function (part) return part.lexeme).join('/');
+    var exports = stmt.exports.map(function (e) return e.lexeme);
+    var module = new Module(name, environment, exports);
+
+    modules.set(name, module);
+
     return null;
   }
 
@@ -364,9 +370,13 @@ class Interpreter
     }
   }
 
-  private function getModule(name:String) {
+  private function getModule(path:Array<Token>) {
+    var name:String = path.map(function (part) return part.lexeme).join('/');
     if (!modules.exists(name)) {
       loadModule(name);
+    }
+    if (!modules.exists(name)) {
+      throw new RuntimeError(path[path.length - 1], 'The module ${name} was not declared');
     }
     return modules.get(name);
   }
@@ -385,7 +395,7 @@ class Interpreter
     resolver.resolve(stmts);
     environment = new Environment(globals);
     interpret(stmts);
-    modules.set(name, environment);
+    // modules.set(name, environment);
 
     environment = previous;
   }

@@ -21,6 +21,7 @@ class Scanner {
     "var" => TokVar,
     "while" => TokWhile,
     "import" => TokImport,
+    "module" => TokModule,
     "static" => TokStatic
   ];
 

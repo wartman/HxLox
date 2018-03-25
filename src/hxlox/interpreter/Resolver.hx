@@ -174,6 +174,10 @@ class Resolver
     }
   }
 
+  public function visitModuleStmt(stmt:Stmt.Module):Void {
+    // noop
+  }
+
   public function visitVariableExpr(expr:Expr.Variable):Void {
     if (!scopes.empty() && scopes[scopes.length - 1].get(expr.name.lexeme) == false) {
       HxLox.error(expr.name, "Cannot read local variable in its own initializer.");

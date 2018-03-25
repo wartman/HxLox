@@ -1,3 +1,7 @@
+module example.stuff for name, foods, spreads, Doughnut;
+
+import example.test for Doughnut;
+
 var name = "Fred";
 var foods = [ "Bread", "Muffin" ];
 var spreads = {

@@ -1,3 +1,5 @@
+module std.test for Runner, Assert, TestCase;
+
 class Runner {
 
   init() {

@@ -1,6 +1,8 @@
-import "test" for Doughnut, BostonCream;
-import "stuff" for name, foods, spreads;
-import "../std/test" for Assert;
+module example.main for main;
+
+import example.test for BostonCream;
+import example.stuff for Doughnut, name, foods, spreads;
+import std.test for Assert;
 
 class Magic < Doughnut {
   
@@ -20,8 +22,10 @@ class Magic < Doughnut {
 
 }
 
-var test = BostonCream();
-test.cook();
+fun main() {
+  var test = BostonCream();
+  test.cook();
 
-var magic = Magic();
-magic.cook();
+  var magic = Magic();
+  magic.cook();
+}

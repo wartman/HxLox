@@ -27,6 +27,7 @@ class Parser {
       if (match([ TokFun ])) return functionDeclaration('function');
       if (match([ TokClass ])) return classDeclaration();
       if (match([ TokImport ])) return importDeclaration();
+      if (match([ TokModule ])) return moduleDeclaration();
       return statement();
     } catch (error:ParserError) {
       synchronize();
@@ -90,16 +91,35 @@ class Parser {
   }
 
   private function importDeclaration():Stmt {
-    var path = consume(TokString, "Expect a string after 'import'");
+    var path = parseList(TokDot, TokFor, function ():Token {
+      return consume(TokIdentifier, "Expect dot-seperated identifiers for 'import'");
+    });
     consume(TokFor, "Expect a 'for' after an import path");
-    var items:Array<Token> = [];
-    if (!check(TokSemicolon)) {
-      do {
-        items.push(consume(TokIdentifier, "Expect an identifier"));
-      } while (match([ TokComma ]));
-    }
+    var items:Array<Token> = parseList(TokComma, TokSemicolon, function () {
+      return consume(TokIdentifier, "Expect an identifier");
+    });
     consume(TokSemicolon, "Expect a semicolon after import list");
     return cast new Stmt.Import(path, items);
+  }
+
+  private function moduleDeclaration():Stmt {
+    // todo: allow `import foo.bar as foo;` syntax too.
+
+    var path = parseList(TokDot, TokFor, function ():Token {
+      return consume(TokIdentifier, "Expect dot-seperated identifiers for 'module'");
+    });
+    consume(TokFor, "Expect a 'for' after a module path");
+    var items:Array<Token> = parseList(TokComma, TokSemicolon, function () {
+      return consume(TokIdentifier, "Expect an identifier");
+    });
+
+    // if (check(TokLeftBrace)) {
+    //   // inline module stuff here
+    // } else {
+      consume(TokSemicolon, "Expect a semicolon after import list");
+    // }
+
+    return cast new Stmt.Module(path, items);
   }
 
   private function statement():Stmt {
@@ -390,7 +410,7 @@ class Parser {
   }
 
   private function arrayLiteral():Expr {
-    var values:Array<Expr> = parseList(TokComma, TokRightBracket);
+    var values:Array<Expr> = parseList(TokComma, TokRightBracket, expression);
     var end = consume(TokRightBracket, "Expect ']' after values.");
     return new Expr.ArrayLiteral(end, values);
   }
@@ -468,14 +488,14 @@ class Parser {
     }
   }
 
-  private function parseList(sep:TokenType, end:TokenType):Array<Expr> {
-    var exprs:Array<Expr> = [];
+  private function parseList<T>(sep:TokenType, end:TokenType, parser:Void->T):Array<T> {
+    var items:Array<T> = [];
     if (!check(end)) {
       do {
-        exprs.push(expression());
+        items.push(parser());
       } while (match([ sep ]));
     }
-    return exprs;
+    return items;
   }
 
 }

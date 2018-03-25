@@ -1,3 +1,5 @@
+module example.test for Doughnut, BostonCream;
+
 class Doughnut {
   cook() {
     System.print("Fry until golden brown.");

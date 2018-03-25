@@ -1,0 +1,3 @@
+import example.main for main;
+
+main();
