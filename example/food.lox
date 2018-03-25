@@ -1,0 +1,17 @@
+module example.food for Doughnut, Toast;
+
+class Doughnut {
+
+  cook() {
+    System.print("Fry until golden brown.");
+  }
+
+}
+
+class Toast {
+  
+  cook() {
+    System.print("Put in a toaster for a bit");
+  }
+
+}

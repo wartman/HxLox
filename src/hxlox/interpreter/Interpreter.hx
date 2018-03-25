@@ -131,11 +131,12 @@ class Interpreter
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):Dynamic {
-    var name = stmt.path.map(function (part) return part.lexeme).join('/');
+    var path = loader.find(stmt.path);
+    var name = stmt.path.map(function (p) return p.lexeme).join('.');
     var exports = stmt.exports.map(function (e) return e.lexeme);
     var module = new Module(name, environment, exports);
 
-    modules.set(name, module);
+    modules.set(path, module);
 
     return null;
   }
@@ -370,19 +371,19 @@ class Interpreter
     }
   }
 
-  private function getModule(path:Array<Token>) {
-    var name:String = path.map(function (part) return part.lexeme).join('/');
-    if (!modules.exists(name)) {
-      loadModule(name);
+  private function getModule(tokens:Array<Token>) {
+    var path:String = loader.find(tokens);
+    if (!modules.exists(path)) {
+      loadModule(path);
     }
-    if (!modules.exists(name)) {
-      throw new RuntimeError(path[path.length - 1], 'The module ${name} was not declared');
+    if (!modules.exists(path)) {
+      var name = tokens.map(function (t) return t.lexeme).join('.');
+      throw new RuntimeError(tokens[tokens.length - 1], 'The module ${name} was not declared');
     }
-    return modules.get(name);
+    return modules.get(path);
   }
 
-  private function loadModule(name:String) {
-    var path = loader.find(name);
+  private function loadModule(path:String) {
     var source = loader.load(path);
     var previous = environment;
 

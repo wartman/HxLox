@@ -1,6 +1,7 @@
 package hxlox.interpreter;
 
 import sys.io.File;
+import hxlox.Token;
 
 using haxe.io.Path;
 
@@ -16,13 +17,9 @@ class DefaultModuleLoader implements ModuleLoader {
     this.root = root;
   }
 
-  public function find(name:String):String {
-    var path = Path.join([root, name]).normalize();
-    if (path.extension() != 'lox') {
-      // throw error??
-      path = path.withExtension(extension);
-    }
-    return path;
+  public function find(tokens:Array<Token>):String {
+    var path = tokens.map(function (p) return p.lexeme).join('/');
+    return Path.join([ root, path ]).normalize().withExtension(extension);
   }
 
   public function load(path:String):String {

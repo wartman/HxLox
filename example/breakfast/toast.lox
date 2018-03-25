@@ -1,0 +1,14 @@
+module example.breakfast.toast for 
+  Toast,
+  JamToast;
+
+import example.food for Toast;
+
+class JamToast : Toast {
+  
+  cook() {
+    super.cook();
+    System.print("Cover in jam.");
+  }
+
+}

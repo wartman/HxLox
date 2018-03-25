@@ -69,7 +69,7 @@ class Parser {
     var name = consume(TokIdentifier, "Expect a class name.");
     var superclass:Expr = null;
 
-    if (match([ TokLess ])) {
+    if (match([ TokColon ])) {
       consume(TokIdentifier, "Expect superclass name.");
       superclass = new Expr.Variable(previous());
     }

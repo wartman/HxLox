@@ -1,31 +1,26 @@
 module example.main for main;
 
-import example.test for BostonCream;
-import example.stuff for Doughnut, name, foods, spreads;
-import std.test for Assert;
-
-class Magic < Doughnut {
-  
-  cook() {
-    super.cook();
-
-    Assert.equals("foo", "bar");
-
-    foods.push("Cake");
-    System.print(foods.length);
-    System.print(foods.get(2));
-    System.print(spreads.keys().get(1));
-    System.print(spreads.bad);
-    System.print("Cooked " + name);
-    System.print(System.getCwd());
-  }
-
-}
+import example.breakfast.doughnut for Doughnut, BostonCream, Glazed;
+import example.breakfast.toast for Toast, JamToast;
 
 fun main() {
-  var test = BostonCream();
-  test.cook();
+  var doughnuts = [
+    Doughnut(),
+    BostonCream(),
+    Glazed()
+  ];
+  
+  for (var i = 0; i < doughnuts.length; i = i + 1) {
+    var d = doughnuts.get(i);
+    d.cook();
+    System.print("---");
+  }
 
-  var magic = Magic();
-  magic.cook();
+  var toasts = {
+    toast: Toast(),
+    jammed: JamToast()
+  };
+
+  toasts.toast.cook();
+  toasts.jammed.cook();
 }
