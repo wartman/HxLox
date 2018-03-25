@@ -178,6 +178,10 @@ class Resolver
     // noop
   }
 
+  public function visitLambdaExpr(expr:Expr.Lambda):Void {
+    resolveFunction(cast expr.fun, FunLambda);
+  }
+
   public function visitVariableExpr(expr:Expr.Variable):Void {
     if (!scopes.empty() && scopes[scopes.length - 1].get(expr.name.lexeme) == false) {
       HxLox.error(expr.name, "Cannot read local variable in its own initializer.");

@@ -67,6 +67,10 @@ class ObjectLiteral implements Expr {
   var values:Array<Expr>;
 }
 
+class Lambda implements Expr {
+  var fun:Stmt;
+}
+
 class Unary implements Expr {
   var op:Token;
   var right:Expr;

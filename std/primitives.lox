@@ -1,0 +1,9 @@
+module std.primitives for ArrayLiteral;
+
+class ArrayLiteral {
+  
+  map(cb) {
+    // todo
+  }
+
+}

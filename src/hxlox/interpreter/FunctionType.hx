@@ -5,4 +5,5 @@ enum FunctionType {
   FunFunction;
   FunInitializer;
   FunMethod;
+  FunLambda;
 }

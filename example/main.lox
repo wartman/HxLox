@@ -10,6 +10,13 @@ fun main() {
     Glazed()
   ];
   
+  var indexes = doughnuts.map(fun (value, index) {
+    return index;
+  });
+
+  System.print(indexes.get(0));
+  System.print(indexes.length);
+
   for (var i = 0; i < doughnuts.length; i = i + 1) {
     var d = doughnuts.get(i);
     d.cook();

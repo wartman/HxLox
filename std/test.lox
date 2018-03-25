@@ -21,7 +21,7 @@ class Runner {
 
 class Assert {
   
-  /// Note working yet (we can't throw errors), but you get the idea.
+  /// Not working yet (we can't throw errors), but you get the idea.
   static equals(a, b) {
     if (a == b) {
       System.print("Equal");

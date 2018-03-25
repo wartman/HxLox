@@ -46,7 +46,13 @@ class Parser {
   }
 
   private function functionDeclaration(kind:String):Stmt {
-    var name:Token = consume(TokIdentifier, 'Expect ${kind} name.');
+    var name:Token;
+    if (kind != 'lambda' || check(TokIdentifier)) {
+      name = consume(TokIdentifier, 'Expect ${kind} name.');
+    } else {
+      name = new Token(TokIdentifier, '<annonymous>', '<annonymous>', previous().line);
+    }
+
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
     var params:Array<Token> = [];
     if (!check(TokRightParen)) {
@@ -404,6 +410,10 @@ class Parser {
 
     if (match([ TokLeftBrace ])) {
       return blockOrObjectLiteral();
+    }
+
+    if (match([ TokFun ])) {
+      return new Expr.Lambda(functionDeclaration('lambda'));
     }
 
     throw error(peek(), 'Expect expression');

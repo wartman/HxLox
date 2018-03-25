@@ -53,7 +53,7 @@ class ArrayLiteralMapMethod implements Callable {
   }
 
   public function arity():Int {
-    return 2;
+    return 1;
   }
 
 }

@@ -75,6 +75,7 @@ class Scanner {
           addToken(TokSlash);
         }
       case '"': string();
+      case "'": string("'");
       case ' ' | '\r' | '\t': null; // ignore
       case '\n': newline(); // Might be a valid statement end -- checked by the parser.
       default: 
@@ -112,8 +113,8 @@ class Scanner {
     // addToken(TokNewline);
   }
 
-  private function string() {
-    while (peek() != '"' && !isAtEnd()) {
+  private function string(quote:String = '"') {
+    while (peek() != quote && !isAtEnd()) {
       if (peek() == '\n') {
         line++;
       }

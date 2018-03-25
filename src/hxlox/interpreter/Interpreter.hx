@@ -88,6 +88,11 @@ class Interpreter
     return null;
   }
 
+  public function visitLambdaExpr(expr:Expr.Lambda):Dynamic {
+    var fun:Function = new Function(cast expr.fun, environment, false);
+    return fun;
+  }
+
   public function visitClassStmt(stmt:Stmt.Class):Dynamic {
     environment.define(stmt.name.lexeme, null);
 
