@@ -1,9 +1,49 @@
-module std.primitives for ArrayLiteral;
+module std.primitives for Array, Object, String, Map;
 
-class ArrayLiteral {
-  
+class Object {
+
+  toString() {
+    return 'Object';
+  }
+
+}
+
+class Array : Object {
+
+  get(i) {
+    return __ARRAY_GET(this.values, i);
+  }
+
+  push(value) {
+    this.values = __ARRAY_PUSH(this.values, value); 
+  }
+
   map(cb) {
-    // todo
+    var out = [];
+    for (var i = 0; i < this.length; i = i + 1) {
+      out.push(cb(this.get(i), i));
+    }
+    return out;
+  }
+
+}
+
+class String : Object {
+
+}
+
+class Int : Object {
+  
+}
+
+class Map : Object {
+
+  get(key) {
+    return __MAP_GET(this.values, key);
+  }
+
+  set(key, value) {
+    __MAP_SET(this.values, key, value);
   }
 
 }

@@ -26,6 +26,10 @@ class Instance implements Object {
     fields.set(name.lexeme, value);
   }
 
+  public function getClass() {
+    return cls;
+  }
+
   public function toString() {
     return '${this.cls.name} instance';
   }

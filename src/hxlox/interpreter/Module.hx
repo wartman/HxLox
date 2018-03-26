@@ -6,7 +6,6 @@ import hxlox.Token;
 class Module extends CoreType {
 
   private var name:String;
-  // private var children:Map<String, Module> = new Map();
   private var env:Environment;
   private var exports:Array<String>;
 
@@ -16,14 +15,7 @@ class Module extends CoreType {
     this.exports = exports;
   }
 
-  // public function addChild(name:String, module:Module) {
-  //   children.set(name, module);
-  // }
-
   override public function get(name:Token):Dynamic {
-    // if (children.exists(name.lexeme)) {
-    //   return children.get(name.lexeme);
-    // }
     if (exports.indexOf(name.lexeme) < 0) {
       throw new RuntimeError(name, 'The module ${this.name} does not export: ${name.lexeme}');
     }

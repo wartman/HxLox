@@ -16,6 +16,7 @@ class Interpreter
 {
 
   public var globals:Environment = new Environment();
+  public var currentModule:Module;
   private var environment:Environment;
   private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
@@ -26,11 +27,11 @@ class Interpreter
       loader = new DefaultModuleLoader(Sys.getCwd());
     }
     this.loader = loader;
-
-    // Setup default libraries
-    globals.define('System', new hxlox.interpreter.foreign.System());
-    
     environment = globals;
+    currentModule = new Module('root', globals, []);
+
+    // Setup default types
+    hxlox.interpreter.foreign.CoreTypes.addCoreTypes(this);
   }
 
   public function interpret(stmts:Array<Stmt>) {
@@ -39,6 +40,7 @@ class Interpreter
         execute(stmt);
       }
     } catch (error:RuntimeError) {
+      Sys.println('In ' + currentModule.toString());
       HxLox.runtimeError(error);
     }
   }
@@ -142,6 +144,7 @@ class Interpreter
     var module = new Module(name, environment, exports);
 
     modules.set(path, module);
+    currentModule = module;
 
     return null;
   }
@@ -189,6 +192,14 @@ class Interpreter
   }
 
   public function visitLiteralExpr(expr:Expr.Literal):Dynamic {
+    // if (Std.is(expr.value, String)) {
+    //   var string:Class = globals.values.get('String');
+    //   return string.call(this, [ expr.value ]);
+    // } 
+    // else if (Std.is(expr.value, Int)) {
+    //   var int:Class = globals.values.get('Int');
+    //   return int.call(this, [ expr.value ]);
+    // }
     return expr.value;
   }
 
@@ -270,6 +281,15 @@ class Interpreter
           left + right;
         } else if (Std.is(left, String) && Std.is(right, String)) {
           left + right;
+        } else if (Std.is(left, Instance)) {
+          var inst:Instance = cast left;
+          var cls = inst.getClass();
+          if (cls.name == 'Literal' || (cls.superclass != null && cls.superclass.name == 'Literal')) {
+            var add:Callable = cls.findMethod(inst, 'add');
+            add.call(this, [ right ]);
+          } else {
+            throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
+          }
         } else {
           throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
         }
@@ -325,19 +345,19 @@ class Interpreter
     for (value in expr.values) {
       values.push(evaluate(value));
     }
-    return new ArrayLiteralType(values);
+    var arrayClass:Class = globals.values.get('Array');
+    return arrayClass.call(this, [ values ]);
   }
 
   public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):Dynamic {
     var keys:Array<String> = [];
     var values:Array<Dynamic> = [];
-    for (key in expr.keys) {
-      keys.push(key.lexeme);
+    var object:Class = globals.values.get('Object');
+    var inst = object.call(this, []);
+    for (i in 0...expr.keys.length) {
+      inst.set(expr.keys[i], evaluate(expr.values[i]));
     }
-    for (value in expr.values) {
-      values.push(evaluate(value));
-    }
-    return new ObjectLiteralType(keys, values);
+    return inst;
   }
 
   private function isTruthy(obj:Dynamic):Bool {
@@ -390,7 +410,8 @@ class Interpreter
 
   private function loadModule(path:String) {
     var source = loader.load(path);
-    var previous = environment;
+    var previousEnv = environment;
+    var previousModule = currentModule;
 
     var scanner = new Scanner(source);
     var tokens = scanner.scanTokens();
@@ -401,9 +422,9 @@ class Interpreter
     resolver.resolve(stmts);
     environment = new Environment(globals);
     interpret(stmts);
-    // modules.set(name, environment);
 
-    environment = previous;
+    environment = previousEnv;
+    currentModule = previousModule;
   }
 
 }

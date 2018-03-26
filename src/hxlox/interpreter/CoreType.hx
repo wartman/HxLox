@@ -2,6 +2,7 @@ package hxlox.interpreter;
 
 import hxlox.Token;
 
+// Maybe extend class instead? Return actual instances?
 class CoreType implements Object {
 
   private var fields:Map<String, Void->Dynamic> = new Map();
