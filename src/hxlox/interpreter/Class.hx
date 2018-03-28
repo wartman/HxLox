@@ -4,7 +4,7 @@ class Class extends Instance implements Callable {
 
   public var name:String;
   public var superclass:Class;
-  private var methods:Map<String, Function>;
+  @:isVar public var methods(default, null):Map<String, Function>;
   private var staticMethods:Map<String, Function>;
 
   public function new(name:String, superclass:Class, methods:Map<String, Function>, staticMethods:Map<String, Function>) {

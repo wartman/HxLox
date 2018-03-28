@@ -4,8 +4,8 @@ import hxlox.Token;
 
 class Instance implements Object {
 
+  @:isVar public var fields(default, never):Map<String, Dynamic> = new Map();
   private var cls:Class;
-  private var fields:Map<String, Dynamic> = new Map();
 
   public function new(cls:Class) {
     this.cls = cls;

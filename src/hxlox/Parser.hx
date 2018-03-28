@@ -100,12 +100,21 @@ class Parser {
     var path = parseList(TokDot, TokFor, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'import'");
     });
-    consume(TokFor, "Expect a 'for' after an import path");
-    var items:Array<Token> = parseList(TokComma, TokSemicolon, function () {
-      return consume(TokIdentifier, "Expect an identifier");
-    });
+    var alias:Token = null;
+    var items:Array<Token> = [];
+
+    if (match([ TokAs ])) {
+      alias = consume(TokIdentifier, "Expect an identifier after `as`");
+    } else if (match([ TokFor ])) {
+      items = parseList(TokComma, TokSemicolon, function () {
+        return consume(TokIdentifier, "Expect an identifier");
+      });
+    } else {
+      error(previous(), "Expect a 'for' or an 'as' after an import path");
+    }
+
     consume(TokSemicolon, "Expect a semicolon after import list");
-    return cast new Stmt.Import(path, items);
+    return new Stmt.Import(path, alias, items);
   }
 
   private function moduleDeclaration():Stmt {
@@ -133,6 +142,8 @@ class Parser {
     if (match([ TokWhile ])) return whileStatement();
     if (match([ TokFor ])) return forStatement();
     if (match([ TokReturn ])) return returnStatement();
+    if (match([ TokThrow ])) return throwStatement();
+    if (match([ TokTry ])) return tryStatement();
     if (match([ TokLeftBrace ])) return new Stmt.Block(block());
     return expressionStatement();
   }
@@ -161,6 +172,9 @@ class Parser {
   }
 
   private function forStatement():Stmt {
+    // TODO:
+    // Replace with `for (_ in _)`
+
     consume(TokLeftParen, "Expect '(' after 'for'.");
 
     var initializer:Stmt;
@@ -224,6 +238,24 @@ class Parser {
     return new Stmt.Expression(expr);
   }
 
+  private function throwStatement():Stmt {
+    var value = expression();
+    consume(TokSemicolon, "Expect ';' after throw value.");
+    return new Stmt.Throw(previous(), value);
+  }
+
+  private function tryStatement():Stmt {
+    consume(TokLeftBrace, "Expect '{' after 'try'");
+    var body = new Stmt.Block(block());
+    consume(TokCatch, "Expect 'catch' after try block");
+    consume(TokLeftParen, "Expect '(' after 'catch'");
+    var exception = consume(TokIdentifier, "Expect an identifier after 'catch'");
+    consume (TokRightParen, "Expect ')' after identifier");
+    consume(TokLeftBrace, "Expect { after 'catch'");
+    var caught = new Stmt.Block(block());
+    return new Stmt.Try(body, caught, exception);
+  }
+
   private function block() {
     var statements:Array<Stmt> = [];
     while (!check(TokRightBrace) && !isAtEnd()) {
@@ -250,6 +282,9 @@ class Parser {
       } else if (Std.is(expr, Expr.Get)) {
         var get:Expr.Get = cast expr;
         return new Expr.Set(get.object, get.name, value);
+      } else if (Std.is(expr, Expr.SubscriptGet)) {
+        var get:Expr.SubscriptGet = cast expr;
+        return new Expr.SubscriptSet(previous(), get.object, get.index, value);
       }
 
       error(equals, "Invalid assignment target.");
@@ -348,7 +383,11 @@ class Parser {
         expr = finishCall(expr);
       } else if (match([ TokDot ])) {
         var name = consume(TokIdentifier, "Expect property name after '.'.");
-        expr = new Expr.Get(expr, name); 
+        expr = new Expr.Get(expr, name);
+      } else if (match([ TokLeftBracket ])) {
+        var index = expression();
+        consume(TokRightBracket, "Expect ']' after expression");
+        expr = new Expr.SubscriptGet(previous(), expr, index);
       } else {
         break;
       }

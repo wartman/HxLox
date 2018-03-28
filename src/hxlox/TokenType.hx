@@ -22,8 +22,9 @@ enum TokenType {
   // Keywords
   TokAnd;
   TokClass;
-  TokElse;
+  TokStatic;
   TokFalse;
+  TokElse;
   TokFun;
   TokFor;
   TokIf;
@@ -35,9 +36,13 @@ enum TokenType {
   TokTrue;
   TokVar;
   TokWhile;
-  TokStatic;
   TokImport;
   TokModule;
+  TokAs;
+  TokIn;
+  TokThrow;
+  TokTry;
+  TokCatch;
 
   // One or two character tokens
   TokBang;

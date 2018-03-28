@@ -21,8 +21,13 @@ class Scanner {
     "var" => TokVar,
     "while" => TokWhile,
     "import" => TokImport,
+    "in" => TokIn,
+    "as" => TokAs,
     "module" => TokModule,
-    "static" => TokStatic
+    "static" => TokStatic,
+    "throw" => TokThrow,
+    "try" => TokTry,
+    "catch" => TokCatch
   ];
 
   private var source:String;

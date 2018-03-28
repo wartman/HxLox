@@ -39,6 +39,19 @@ class Set implements Expr {
   var value:Expr;
 }
 
+class SubscriptGet implements Expr {
+  var end:Token;
+  var object:Expr;
+  var index:Expr;
+}
+
+class SubscriptSet implements Expr {
+  var end:Token;
+  var object:Expr;
+  var index:Expr;
+  var value:Expr;
+}
+
 class Super implements Expr {
   var keyword:Token;
   var method:Token;

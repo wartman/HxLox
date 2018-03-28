@@ -1,0 +1,11 @@
+module test.core for ReflectTest;
+
+import std.test for Case;
+
+class ReflectTest : Case {
+  
+  testGetType() {
+    this.assertEquals(Reflect.getType(ReflectTest), 'ReflectTest');
+  }
+
+}

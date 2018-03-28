@@ -11,6 +11,7 @@ class Expression implements Stmt {
 
 class Import implements Stmt {
   var path:Array<Token>;
+  var alias:Token;
   var imports:Array<Token>;
 }
 
@@ -22,6 +23,17 @@ class Module implements Stmt {
 class Var implements Stmt {
   var name:Token;
   var initializer:Expr;
+}
+
+class Throw implements Stmt {
+  var keyword:Token;
+  var expr:Expr;
+}
+
+class Try implements Stmt {
+  var body:Stmt;
+  var caught:Stmt;
+  var exception:Token;
 }
 
 class While implements Stmt {

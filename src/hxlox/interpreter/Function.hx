@@ -2,7 +2,7 @@ package hxlox.interpreter;
 
 import hxlox.Stmt.Fun;
 
-class Function extends CoreType implements Callable {
+class Function implements Callable {
 
   private var declaration:Fun;
   private var closure:Environment;
@@ -12,9 +12,6 @@ class Function extends CoreType implements Callable {
     this.declaration = declaration;
     this.closure = closure;
     this.isInitializer = isInitializer;
-
-    methods.set('call', new FunctionCallMethod(this));
-    methods.set('bind', new FunctionBindMethod(this));
   }
 
   public function bind(instance:Object) {
@@ -41,44 +38,8 @@ class Function extends CoreType implements Callable {
     return null;
   }
 
- override public function toString() {
+  public function toString() {
     return '<fun ${declaration.name.lexeme}>';
-  }
-
-}
-
-class FunctionCallMethod implements Callable {
-
-  private var instance:Function;
-
-  public function new(instance:Function) {
-    this.instance = instance;
-  }
-
-  public function call(interpreter:Interpreter, arguments:Array<Dynamic>):Dynamic {
-    return instance.call(interpreter, arguments);
-  }
-
-  public function arity():Int {
-    return instance.arity();
-  }
-
-}
-
-class FunctionBindMethod implements Callable {
-
-  private var instance:Function;
-
-  public function new(instance:Function) {
-    this.instance = instance;
-  }
-
-  public function call(interpreter:Interpreter, arguments:Array<Dynamic>):Dynamic {
-    return instance.bind(arguments[0]);
-  }
-
-  public function arity():Int {
-    return 1;
   }
 
 }

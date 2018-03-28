@@ -21,6 +21,9 @@ class Interpreter
   private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
+  private var objectMappings:Map<String, String> = [
+    'String' => 'String'
+  ];
 
   public function new(?loader:ModuleLoader) {
     if (loader == null) {
@@ -130,9 +133,19 @@ class Interpreter
 
   public function visitImportStmt(stmt:Stmt.Import):Dynamic {
     var module = getModule(stmt.path);
-    for (name in stmt.imports) {
-      var value = module.get(name);
-      environment.define(name.lexeme, value);
+    if (stmt.alias != null) {
+      var obj:Class = globals.values.get('Object');
+      var mod:Instance = obj.call(this, []);
+      for (name in module.exports) {
+        var tok:Token = new Token(TokIdentifier, name, '', stmt.alias.line);
+        mod.set(tok, module.get(tok));
+      }
+      environment.define(stmt.alias.lexeme, mod);
+    } else {
+      for (name in stmt.imports) {
+        var value = module.get(name);
+        environment.define(name.lexeme, value);
+      }
     }
     return null;
   }
@@ -153,6 +166,24 @@ class Interpreter
     var value = null;
     if (stmt.value != null) value = evaluate(stmt.value);
     throw new Return(value);
+  }
+
+  public function visitThrowStmt(stmt:Stmt.Throw):Dynamic {
+    var value = evaluate(stmt.expr);
+    throw value; // temp
+    return null;
+  }
+
+  public function visitTryStmt(stmt:Stmt.Try):Dynamic {
+    try {
+      execute(stmt.body);
+    } catch (e:RuntimeError) {
+      // Todo: actually handle the value
+      var env = new Environment(environment);
+      env.define(stmt.exception.lexeme, e.message);
+      executeBlock((cast stmt.caught:Stmt.Block).statements, env);
+    }
+    return null;
   }
 
   public function visitIfStmt(stmt:Stmt.If):Dynamic {
@@ -281,15 +312,11 @@ class Interpreter
           left + right;
         } else if (Std.is(left, String) && Std.is(right, String)) {
           left + right;
-        } else if (Std.is(left, Instance)) {
-          var inst:Instance = cast left;
-          var cls = inst.getClass();
-          if (cls.name == 'Literal' || (cls.superclass != null && cls.superclass.name == 'Literal')) {
-            var add:Callable = cls.findMethod(inst, 'add');
-            add.call(this, [ right ]);
-          } else {
-            throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
-          }
+        } else if (Std.is(left, String) && Std.is(right, Int)) {
+          left + Std.string(right);
+        } else if (Std.is(left, Int) && Std.is(right, String)) {
+          Std.string(left) + right;
+        // } else if (Std.is(left, Instance)) {
         } else {
           throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
         }
@@ -335,9 +362,51 @@ class Interpreter
   public function visitGetExpr(expr:Expr.Get):Dynamic {
     var object = evaluate(expr.object);
     if (Std.is(object, Object)) {
-      return (cast object).get(expr.name);
+      return object.get(expr.name);
     }
+
+    // Sorta a hack :P
+    var cls = getLiteralClass(object);
+    if (cls != null) {
+      var inst:Instance = cls.call(this, [ object ]);
+      return inst.get(expr.name);
+    }
+    
     throw new RuntimeError(expr.name, "Only objects have properties.");
+  }
+
+  // Todo: probably a more elegant way to handle subscript operators.
+  public function visitSubscriptGetExpr(expr:Expr.SubscriptGet):Dynamic {
+    var object = evaluate(expr.object);
+    var index = evaluate(expr.index);
+
+    if (Std.is(object, Instance)) {
+      var obj:Instance = cast object;
+      var method:Function = obj.getClass().findMethod(object, '__offsetGet');
+      if (method != null) {
+        return method.call(this, [ index ]);
+      }
+      throw new RuntimeError(expr.end, "Subscripts can only be used on objects with an '__offsetGet' method");
+    }
+
+    throw new RuntimeError(expr.end, "Only objects have properties.");
+  }
+
+  public function visitSubscriptSetExpr(expr:Expr.SubscriptSet):Dynamic {
+    var object = evaluate(expr.object);
+    var index = evaluate(expr.index);
+    var value = evaluate(expr.value);
+
+    if (Std.is(object, Instance)) {
+      var obj:Instance = cast object;
+      var method:Function = obj.getClass().findMethod(object, '__offsetSet');
+      if (method != null) {
+        return method.call(this, [ index, value ]);
+      }
+      throw new RuntimeError(expr.end, "Subscripts can only be used on objects with an '__offsetSet' method");
+    }
+
+    throw new RuntimeError(expr.end, "Only objects have properties."); 
   }
 
   public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):Dynamic {
@@ -394,6 +463,16 @@ class Interpreter
     } else {
       return environment.get(name);
     }
+  }
+
+  private function getLiteralClass(value:Dynamic):Null<Class> {
+    var name = Type.getClassName(Type.getClass(value));
+    if (objectMappings.exists(name)) {
+      var loxName = objectMappings.get(name);
+      var loxClass:Class = globals.values.get(loxName);
+      return loxClass;
+    }
+    return null;
   }
 
   private function getModule(tokens:Array<Token>) {

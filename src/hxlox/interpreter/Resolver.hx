@@ -60,6 +60,17 @@ class Resolver
     }
   }
 
+  public function visitThrowStmt(stmt:Stmt.Throw):Void {
+    resolveExpr(stmt.expr);
+  }
+
+  public function visitTryStmt(stmt:Stmt.Try):Void {
+    resolveStatement(stmt.body);
+    resolveStatement(stmt.caught);
+    declare(stmt.exception);
+    define(stmt.exception);
+  }
+
   public function visitWhileStmt(stmt:Stmt.While):Void {
     resolveExpr(stmt.condition);
     resolveStatement(stmt.body);
@@ -106,6 +117,17 @@ class Resolver
   public function visitSetExpr(expr:Expr.Set):Void {
     resolveExpr(expr.value);
     resolveExpr(expr.object);
+  }
+
+  public function visitSubscriptGetExpr(expr:Expr.SubscriptGet):Void {
+    resolveExpr(expr.object);
+    resolveExpr(expr.index);
+  }
+
+  public function visitSubscriptSetExpr(expr:Expr.SubscriptSet):Void {
+    resolveExpr(expr.object);
+    resolveExpr(expr.index);
+    resolveExpr(expr.value);
   }
 
   public function visitSuperExpr(expr:Expr.Super):Void {
@@ -168,6 +190,10 @@ class Resolver
   }
 
   public function visitImportStmt(stmt:Stmt.Import):Void {
+    if (stmt.alias != null) {
+      define(stmt.alias);
+      declare(stmt.alias);
+    }
     for (name in stmt.imports) {
       define(name);
       declare(name);

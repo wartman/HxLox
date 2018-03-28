@@ -1,43 +1,161 @@
-module std.test for Runner, Assert, TestCase;
+module std.test for Runner, Result, Status, Case;
 
 class Runner {
+  
+  init() {
+    this.result = Result();
+    this.cases = [];
+  }
 
+  add(case) {
+    this.cases.push(case);
+    return this;
+  }
+
+  print(value) {
+    System.print(value);
+  }
+
+  run() {
+    this.result = Result();
+    for (var i = 0; i < this.cases.length(); i = i + 1) {
+      var case = this.cases[i];
+      this.runCase(case);
+    }
+    this.print(this.result.toString());
+    return this.result.wasSuccessful();
+  }
+
+  runCase(case) {
+    var className = Reflect.getType(case);
+    var methods = Reflect.getMethodNames(case);
+    this.print('Class: ' + className + ' ');
+    for (var i = 0; i < methods.length(); i = i + 1) {
+      var methodName = methods[i];
+      if (methodName.indexOf('test') == 0) {
+        var method = Reflect.getMethod(case, methodName);
+        case.currentTest = Status(className, methodName);
+        try {
+          method();
+          if (case.currentTest.isDone()) {
+            case.currentTest.success = true;
+            this.print('.');
+          } else {
+            case.currentTest.success = false;
+            case.currentTest.error = "(warning) no assert";
+            this.print('W');
+          } 
+        } catch (e) {
+          this.print('E');
+          if (Reflect.getType(e) == 'Status') {
+            e = e.error;
+          }
+          case.currentTest.error = "exception thrown: " + e;
+        }
+      }
+      this.result.add(case.currentTest);
+    }
+    this.print('\n');
+  }
+
+}
+
+class Result {
+  
   init() {
     this.tests = [];
+    this.failures = 0;
+    this.success = true;
   }
 
-  add(test) {
-    this.tests.push(test);
+  add(status) {
+    this.tests.push(status);
+    if (status.success == false) {
+      this.success = false;
+    }
   }
 
-  run() {
+  wasSuccessful() {
+    return this.success;
+  }
+
+  toString() {
+    var out = "";
     for (var i = 0; i < this.tests.length(); i = i + 1) {
-      var test = this.tests.get(i);
-      test.run();
+      var test = this.tests[i];
+      if (test.success == false) {
+        out = out + "* " + test.className + "::" + test.methodName + "()\n";
+        out = out + "ERR: " + test.error + "\n";
+        this.failures = this.failures + 1;
+      }
     }
-  }
-  
-}
 
-class Assert {
-  
-  /// Not working yet (we can't throw errors), but you get the idea.
-  static equals(a, b) {
-    if (a == b) {
-      System.print("Equal");
+    out = out + "\n";
+    if (this.failures == 0) {
+      out = out + 'OK ';
     } else {
-      System.print("Not equal");
+      out = out + 'FAILED ';
     }
+    out = out + this.tests.length() + ' tests, ' 
+      + this.failures + ' failed, ' 
+      + (this.tests.length() - this.failures) + ' success \n';
+
+    return out;
   }
 
 }
 
-class TestCase {
+class Status {
   
-  init() {}
+  init(className, methodName) {
+    this.className = className;
+    this.methodName = methodName;
+    this.success = false;
+    this.error = null;
+    this.done = false;
+  }
 
-  run() {
-    // noop
+  markDone() {
+    this.done = true;
+  }
+
+  isDone() {
+    return this.done;
+  }
+
+}
+
+class Case {
+
+  init() {
+    this.currentTest = Status();
+  }
+
+  assertTrue(value) {
+    this.currentTest.done = true;
+    if (value != true) {
+      this.currentTest.success = false;
+      this.currentTest.error = "Expected true but was false";
+      throw this.currentTest;
+    }
+  }
+  
+  assertFalse(value) {
+    this.currentTest.done = true;
+    if (value != false) {
+      this.currentTest.success = false;
+      this.currentTest.error = "Expected false but was true";
+      throw this.currentTest;
+    }
+  }
+  
+  assertEquals(expected, actual) {
+    this.currentTest.done = true;
+    if (expected != actual) {
+      this.currentTest.success = false;
+      this.currentTest.error = "Expected '" + expected + "' but was '" + actual + "'";
+      throw this.currentTest;
+    }
   }
 
 }
