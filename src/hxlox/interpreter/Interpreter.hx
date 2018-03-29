@@ -182,6 +182,10 @@ class Interpreter
       var env = new Environment(environment);
       env.define(stmt.exception.lexeme, e.message);
       executeBlock((cast stmt.caught:Stmt.Block).statements, env);
+    } catch (e:Dynamic) {
+      var env = new Environment(environment);
+      env.define(stmt.exception.lexeme, e);
+      executeBlock((cast stmt.caught:Stmt.Block).statements, env);
     }
     return null;
   }

@@ -225,42 +225,51 @@ class Parser {
   private function returnStatement():Stmt {
     var keyword = previous();
     var value:Expr = null;
-    if (!check(TokSemicolon)) {
+    if (!check(TokSemicolon) || !check(TokNewline)) {
       value = expression();
     }
-    consume(TokSemicolon, "Expect ';' after return value.");
+    expectEndOfStatement();
     return new Stmt.Return(keyword, value);
   }
 
   private function expressionStatement():Stmt {
     var expr = expression();
-    consume(TokSemicolon, "Expect ';' after expression.");
+    expectEndOfStatement();
     return new Stmt.Expression(expr);
   }
 
   private function throwStatement():Stmt {
     var value = expression();
-    consume(TokSemicolon, "Expect ';' after throw value.");
+    expectEndOfStatement();
     return new Stmt.Throw(previous(), value);
   }
 
   private function tryStatement():Stmt {
+    ignoreNewlines();
     consume(TokLeftBrace, "Expect '{' after 'try'");
+    ignoreNewlines();
+
     var body = new Stmt.Block(block());
+    
+    ignoreNewlines();
     consume(TokCatch, "Expect 'catch' after try block");
     consume(TokLeftParen, "Expect '(' after 'catch'");
     var exception = consume(TokIdentifier, "Expect an identifier after 'catch'");
     consume (TokRightParen, "Expect ')' after identifier");
     consume(TokLeftBrace, "Expect { after 'catch'");
+    
+    ignoreNewlines();
     var caught = new Stmt.Block(block());
     return new Stmt.Try(body, caught, exception);
   }
 
   private function block() {
+    ignoreNewlines();
     var statements:Array<Stmt> = [];
     while (!check(TokRightBrace) && !isAtEnd()) {
       statements.push(declaration());
     }
+    ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after block.");
     return statements;
   }
@@ -274,6 +283,8 @@ class Parser {
 
     if (match([ TokEqual ])) {
       var equals = previous();
+
+      ignoreNewlines();
       var value = assignment();
 
       if (Std.is(expr, Expr.Variable)) {
@@ -545,6 +556,19 @@ class Parser {
       } while (match([ sep ]));
     }
     return items;
+  }
+
+  private function expectEndOfStatement() {
+    if (match(TokNewline)) {
+      return true;
+    }
+    consume(TokSemicolon, "Expect newline or semicolon after statement");
+  }
+
+  private function ignoreNewlines() {
+    while (check(TokNewline) && !isAtEnd()) {
+      advance();
+    }
   }
 
 }

@@ -115,7 +115,7 @@ class Scanner {
       advance();
     }
     // For now, until we implement things (the parser chokes otherwise)
-    // addToken(TokNewline);
+    addToken(TokNewline);
   }
 
   private function string(quote:String = '"') {
