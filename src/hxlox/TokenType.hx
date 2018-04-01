@@ -3,6 +3,7 @@ package hxlox;
 enum TokenType {
 
   // Single-character tokens
+  TokAt;
   TokLeftParen;
   TokRightParen;
   TokLeftBrace;

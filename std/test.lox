@@ -1,126 +1,131 @@
-module std.test for Runner, Result, Status, Case;
+module std.test for (
+  Runner,
+  Result,
+  Status,
+  Case
+)
 
 class Runner {
-  
+
   init() {
-    this.result = Result();
-    this.cases = [];
+    this.result = Result()
+    this.cases = []
   }
 
   add(case) {
-    this.cases.push(case);
-    return this;
+    this.cases.push(case)
+    return this
   }
 
   print(value) {
-    System.print(value);
+    System.print(value)
   }
 
   run() {
-    this.result = Result();
+    this.result = Result()
     for (var i = 0; i < this.cases.length(); i = i + 1) {
-      var case = this.cases[i];
-      this.runCase(case);
+      var case = this.cases[i]
+      this.runCase(case)
     }
-    this.print(this.result.toString());
-    return this.result.wasSuccessful();
+    this.print(this.result.toString())
+    return this.result.wasSuccessful()
   }
 
   runCase(case) {
-    var className = Reflect.getType(case);
-    var methods = Reflect.getMethodNames(case);
-    this.print('Class: ' + className + ' ');
+    var className = Reflect.getType(case)
+    var methods = Reflect.getMethodNames(case)
+    this.print('Class: ' + className + ' ')
     for (var i = 0; i < methods.length(); i = i + 1) {
-      var methodName = methods[i];
+      var methodName = methods[i]
       if (methodName.indexOf('test') == 0) {
-        var method = Reflect.getMethod(case, methodName);
-        case.currentTest = Status(className, methodName);
+        var method = Reflect.getMethod(case, methodName)
+        case.currentTest = Status(className, methodName)
         try {
-          method();
+          method()
           if (case.currentTest.isDone()) {
-            case.currentTest.success = true;
-            this.print('.');
+            case.currentTest.success = true
+            this.print('.')
           } else {
-            case.currentTest.success = false;
-            case.currentTest.error = "(warning) no assert";
-            this.print('W');
-          } 
-        } catch (e) {
-          this.print('E');
-          if (Reflect.getType(e) == 'Status') {
-            e = e.error;
+            case.currentTest.success = false
+            case.currentTest.error = "(warning) no assert"
+            this.print('W')
           }
-          case.currentTest.error = "exception thrown: " + e;
+        } catch (e) {
+          this.print('E')
+          if (Reflect.getType(e) == 'Status') {
+            e = e.error
+          }
+          case.currentTest.error = "exception thrown: " + e
         }
       }
-      this.result.add(case.currentTest);
+      this.result.add(case.currentTest)
     }
-    this.print('\n');
+    this.print('\n')
   }
 
 }
 
 class Result {
-  
+
   init() {
-    this.tests = [];
-    this.failures = 0;
-    this.success = true;
+    this.tests = []
+    this.failures = 0
+    this.success = true
   }
 
   add(status) {
-    this.tests.push(status);
+    this.tests.push(status)
     if (status.success == false) {
-      this.success = false;
+      this.success = false
     }
   }
 
   wasSuccessful() {
-    return this.success;
+    return this.success
   }
 
   toString() {
-    var out = "";
+    var out = ""
     for (var i = 0; i < this.tests.length(); i = i + 1) {
-      var test = this.tests[i];
+      var test = this.tests[i]
       if (test.success == false) {
-        out = out + "* " + test.className + "::" + test.methodName + "()\n";
-        out = out + "ERR: " + test.error + "\n";
-        this.failures = this.failures + 1;
+        out = out + "* " + test.className + "::" + test.methodName + "()\n"
+        out = out + "ERR: " + test.error + "\n"
+        this.failures = this.failures + 1
       }
     }
 
-    out = out + "\n";
+    out = out + "\n"
     if (this.failures == 0) {
-      out = out + 'OK ';
+      out = out + 'OK '
     } else {
-      out = out + 'FAILED ';
+      out = out + 'FAILED '
     }
-    out = out + this.tests.length() + ' tests, ' 
-      + this.failures + ' failed, ' 
-      + (this.tests.length() - this.failures) + ' success \n';
+    out = out + this.tests.length() + ' tests, ' +
+      this.failures + ' failed, ' +
+      (this.tests.length() - this.failures) + ' success \n'
 
-    return out;
+    return out
   }
 
 }
 
 class Status {
-  
+
   init(className, methodName) {
-    this.className = className;
-    this.methodName = methodName;
-    this.success = false;
-    this.error = null;
-    this.done = false;
+    this.className = className
+    this.methodName = methodName
+    this.success = false
+    this.error = null
+    this.done = false
   }
 
   markDone() {
-    this.done = true;
+    this.done = true
   }
 
   isDone() {
-    return this.done;
+    return this.done
   }
 
 }
@@ -128,33 +133,33 @@ class Status {
 class Case {
 
   init() {
-    this.currentTest = Status();
+    this.currentTest = Status()
   }
 
   assertTrue(value) {
-    this.currentTest.done = true;
+    this.currentTest.done = true
     if (value != true) {
-      this.currentTest.success = false;
-      this.currentTest.error = "Expected true but was false";
-      throw this.currentTest;
+      this.currentTest.success = false
+      this.currentTest.error = "Expected true but was false"
+      throw this.currentTest
     }
   }
-  
+
   assertFalse(value) {
-    this.currentTest.done = true;
+    this.currentTest.done = true
     if (value != false) {
-      this.currentTest.success = false;
-      this.currentTest.error = "Expected false but was true";
-      throw this.currentTest;
+      this.currentTest.success = false
+      this.currentTest.error = "Expected false but was true"
+      throw this.currentTest
     }
   }
-  
+
   assertEquals(expected, actual) {
-    this.currentTest.done = true;
+    this.currentTest.done = true
     if (expected != actual) {
-      this.currentTest.success = false;
-      this.currentTest.error = "Expected '" + expected + "' but was '" + actual + "'";
-      throw this.currentTest;
+      this.currentTest.success = false
+      this.currentTest.error = "Expected '" + expected + "' but was '" + actual + "'"
+      throw this.currentTest
     }
   }
 

@@ -1,49 +1,127 @@
-module std.primitives for Array, Object, String, Map;
+module std.primitives for (
+  Array,
+  Object,
+  String,
+  Map
+)
 
-class Object {
+class System {
 
-  toString() {
-    return 'Object';
+  static print(s) {
+    __SYSTEM_PRINT(s)
+  }
+
+  static println(s) {
+    __SYSTEM_PRINT_LN(s)
+  }
+
+  static getModule() {
+    return __SYSTEM_GET_MODULE()
+  }
+
+  static getCwd() {
+    return __SYSTEM_GET_CWD();
   }
 
 }
 
-class Array : Object {
+class Reflect {
 
-  get(i) {
+  static getType(cls) {
+    return __REFLECT_TYPE(cls);
+  }
+
+  static is(a, b) {
+    // Todo: need to be able to check superclasses.
+    return this.getType(a) == this.getType(b);
+  }
+
+  static getMethod(obj, name) {
+    return __REFLECT_GET_METHOD(obj, name);
+  }
+
+  static getMethodNames(cls) {
+    return __REFLECT_GET_METHOD_NAMES(cls);
+  }
+
+  static getField(cls, name) {
+    return __REFLECT_GET_FIELD(cls, name);
+  }
+
+}
+
+class Exception {
+
+  init(message) {
+    this.message = message;
+  }
+
+}
+
+class Array {
+
+  init(values) {
+    this.values = values;
+  }
+
+  __offsetGet(i) {
     return __ARRAY_GET(this.values, i);
   }
 
+  __offsetSet(i, value) {
+    __ARRAY_SET(this.values, i, value);
+  }
+
+  length() {
+    return __ARRAY_LENGTH(this.values);
+  }
+
   push(value) {
-    this.values = __ARRAY_PUSH(this.values, value); 
+    __ARRAY_PUSH(this.values, value);
+    return this.length();
+  }
+
+  pop() {
+    return __ARRAY_POP(this.values);
   }
 
   map(cb) {
     var out = [];
-    for (var i = 0; i < this.length; i = i + 1) {
-      out.push(cb(this.get(i), i));
-    }
-    return out;
+    for (var i = 0; i < this.length(); i = i + 1)
+      out.push(cb(__ARRAY_GET(this.values, i), i))
+    return out
   }
 
 }
 
-class String : Object {
+class Object {
 
-}
-
-class Int : Object {
-  
-}
-
-class Map : Object {
-
-  get(key) {
-    return __MAP_GET(this.values, key);
+  __offsetGet(key) {
+    return Reflect.getField(this, key);
   }
 
-  set(key, value) {
-    __MAP_SET(this.values, key, value);
+}
+
+class String {
+
+  init(value) {
+    this.value = value;
+  }
+
+  indexOf(find) {
+    return __STRING_INDEX_OF(this.value, find);
+  }
+
+  split(sep) {
+    return __STRING_SPLIT(this.value, sep);
+  }
+
+  substring(start, end) {
+    return __STRING_SUBSTRING(this.value, start, end);
+  }
+
+  toString() {
+    return this.value;
   }
 
 }

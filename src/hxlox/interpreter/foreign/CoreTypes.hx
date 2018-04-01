@@ -118,7 +118,7 @@ class CoreTypes {
     globals.define('__STRING_SUBSTRING', new ExternCallable(function (args) {
       var value:String = Std.string(args[0]);
       return value.substring(
-        Std.int(args[1]), 
+        Std.int(args[1]),
         Std.int(args[2])
       );
     }, 3));
@@ -132,15 +132,15 @@ class CoreTypes {
       class System {
 
         static print(s) {
-          __SYSTEM_PRINT(s);
+          __SYSTEM_PRINT(s)
         }
 
         static println(s) {
-          __SYSTEM_PRINT_LN(s);
+          __SYSTEM_PRINT_LN(s)
         }
 
         static getModule() {
-          return __SYSTEM_GET_MODULE();
+          return __SYSTEM_GET_MODULE()
         }
 
         static getCwd() {
@@ -211,11 +211,9 @@ class CoreTypes {
 
         map(cb) {
           var out = [];
-          for (var i = 0; i < this.length(); i = i + 1) {
-            var value = __ARRAY_GET(this.values, i);
-            out.push(cb(value, i));
-          }
-          return out;
+          for (var i = 0; i < this.length(); i = i + 1)
+            out.push(cb(__ARRAY_GET(this.values, i), i))
+          return out
         }
 
       }
@@ -253,7 +251,7 @@ class CoreTypes {
       }
 
     ");
-    
+
     var tokens = scanner.scanTokens();
     var parser = new Parser(tokens);
     var stmts = parser.parse();
@@ -283,4 +281,4 @@ class ExternCallable implements Callable {
     return this.arity_;
   }
 
-} 
+}

@@ -1,47 +1,47 @@
-module test.basics for ArrayTest, StringTest;
+module test.basics for ( ArrayTest, StringTest )
 
-import std.test for Case;
+import std.test for ( Case )
 
 class ArrayTest : Case {
-  
+
   testPush() {
-    var arr = [ 1, 2, 3 ];
-    arr.push(4);
-    this.assertEquals(arr.length(), 4);
-    this.assertEquals(arr[3], 4);
+    var arr = [ 1, 2, 3 ]
+    arr.push(4)
+    this.assertEquals(arr.length(), 4)
+    this.assertEquals(arr[3], 4)
   }
 
   testSubscript() {
-    var arr = [ 1, 2 ];
-    arr[1] = 3;
-    this.assertEquals(arr[1], 3);
+    var arr = [ 1, 2 ]
+    arr[1] = 3
+    this.assertEquals(arr[1], 3)
   }
 
   testPop() {
-    var arr = [ 1, 2, 3 ];
-    var val = arr.pop();
-    this.assertEquals(arr.length(), 2);
-    this.assertEquals(val, 3);
+    var arr = [ 1, 2, 3 ]
+    var val = arr.pop()
+    this.assertEquals(arr.length(), 2)
+    this.assertEquals(val, 3)
   }
 
   testMap() {
-    var arr = [ 1, 2, 3 ];
+    var arr = [ 1, 2, 3 ]
     var changed = arr.map(fun (value, index) {
-      return value + 1;
+      return value + 1
     });
-    this.assertEquals(changed[0], 2);
-    this.assertEquals(changed[1], 3);
-    this.assertEquals(changed[2], 4);
+    this.assertEquals(changed[0], 2)
+    this.assertEquals(changed[1], 3)
+    this.assertEquals(changed[2], 4)
   }
 
 }
 
 class StringTest : Case {
-  
+
   testSplit() {
-    var arr = 'a,b'.split(',');
-    this.assertTrue(Reflect.getType(arr) == 'Array');
-    this.assertEquals(arr.length(), 2);
+    var arr = 'a,b'.split(',')
+    this.assertTrue(Reflect.getType(arr) == 'Array')
+    this.assertEquals(arr.length(), 2)
   }
 
 }

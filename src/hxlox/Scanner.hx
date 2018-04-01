@@ -76,6 +76,7 @@ class Scanner {
       case '/':
         if (match('/')) {
           while (peek() != '\n' && !isAtEnd()) advance();
+          if (peek() == '\n') advance(); // Consume the newline too.
         } else {
           addToken(TokSlash);
         }
@@ -83,7 +84,7 @@ class Scanner {
       case "'": string("'");
       case ' ' | '\r' | '\t': null; // ignore
       case '\n': newline(); // Might be a valid statement end -- checked by the parser.
-      default: 
+      default:
         if (isDigit(c)) {
           number();
         } else if (isAlpha(c)) {

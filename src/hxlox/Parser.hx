@@ -15,6 +15,7 @@ class Parser {
 
   public function parse():Array<Stmt> {
     var stmts:Array<Stmt> = [];
+    ignoreNewlines();
     while (!isAtEnd()) {
       stmts.push(declaration());
     }
@@ -41,7 +42,8 @@ class Parser {
     if (match([ TokEqual ])) {
       initializer = expression();
     }
-    consume(TokSemicolon, "Expect ';' after value.");
+    expectEndOfStatement();
+    // consume(TokSemicolon, "Expect ';' after value.");
     return new Stmt.Var(name, initializer);
   }
 
@@ -68,6 +70,8 @@ class Parser {
     consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
     var body:Array<Stmt> = block();
 
+    ignoreNewlines();
+
     return new Stmt.Fun(name, params, body);
   }
 
@@ -84,14 +88,18 @@ class Parser {
 
     var methods:Array<Stmt.Fun> = [];
     var staticMethods:Array<Stmt.Fun> = [];
+    ignoreNewlines();
     while(!check(TokRightBrace) && !isAtEnd()) {
+      ignoreNewlines();
       if (match([ TokStatic ])) {
         staticMethods.push(cast functionDeclaration('method'));
       } else {
         methods.push(cast functionDeclaration('method'));
       }
     }
+    ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after class body.");
+    ignoreNewlines();
 
     return new Stmt.Class(name, superclass, methods, staticMethods);
   }
@@ -104,34 +112,37 @@ class Parser {
     var items:Array<Token> = [];
 
     if (match([ TokAs ])) {
+      ignoreNewlines();
       alias = consume(TokIdentifier, "Expect an identifier after `as`");
     } else if (match([ TokFor ])) {
-      items = parseList(TokComma, TokSemicolon, function () {
+      consume(TokLeftParen, "Expect '(' after 'import ... for'");
+      items = parseList(TokComma, TokRightParen, function () {
         return consume(TokIdentifier, "Expect an identifier");
       });
+      consume(TokRightParen, "Expect ')' after import list");
     } else {
       error(previous(), "Expect a 'for' or an 'as' after an import path");
     }
 
-    consume(TokSemicolon, "Expect a semicolon after import list");
+    expectEndOfStatement();
     return new Stmt.Import(path, alias, items);
   }
 
   private function moduleDeclaration():Stmt {
-    // todo: allow `import foo.bar as foo;` syntax too.
-
     var path = parseList(TokDot, TokFor, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'module'");
     });
     consume(TokFor, "Expect a 'for' after a module path");
-    var items:Array<Token> = parseList(TokComma, TokSemicolon, function () {
+    consume(TokLeftParen, "Expect '(' after 'module ... for'");
+    var items:Array<Token> = parseList(TokComma, TokRightParen, function () {
       return consume(TokIdentifier, "Expect an identifier");
     });
+    consume(TokRightParen, "Expect ')' after module exports");
 
     // if (check(TokLeftBrace)) {
     //   // inline module stuff here
     // } else {
-      consume(TokSemicolon, "Expect a semicolon after import list");
+      expectEndOfStatement();
     // }
 
     return cast new Stmt.Module(path, items);
@@ -191,12 +202,14 @@ class Parser {
       condition = expression();
     }
     consume(TokSemicolon, "Expect ';' after loop condition.");
+    ignoreNewlines();
 
     var increment:Expr = null;
     if (!check(TokRightParen)) {
       increment = expression();
     }
     consume(TokRightParen, "Expect ')' after loop condition.");
+    ignoreNewlines();
 
     var body = statement();
 
@@ -250,14 +263,14 @@ class Parser {
     ignoreNewlines();
 
     var body = new Stmt.Block(block());
-    
+
     ignoreNewlines();
     consume(TokCatch, "Expect 'catch' after try block");
     consume(TokLeftParen, "Expect '(' after 'catch'");
     var exception = consume(TokIdentifier, "Expect an identifier after 'catch'");
     consume (TokRightParen, "Expect ')' after identifier");
     consume(TokLeftBrace, "Expect { after 'catch'");
-    
+
     ignoreNewlines();
     var caught = new Stmt.Block(block());
     return new Stmt.Try(body, caught, exception);
@@ -271,6 +284,7 @@ class Parser {
     }
     ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after block.");
+    ignoreNewlines();
     return statements;
   }
 
@@ -345,6 +359,7 @@ class Parser {
 
     while (match([ TokGreater, TokGreaterEqual, TokLess, TokLessEqual ])) {
       var op = previous();
+      ignoreNewlines();
       var right = addition();
       expr = new Expr.Binary(expr, op, right);
     }
@@ -357,6 +372,7 @@ class Parser {
 
     while (match([ TokMinus, TokPlus ])) {
       var op = previous();
+      ignoreNewlines();
       var right = multiplication();
       expr = new Expr.Binary(expr, op, right);
     }
@@ -369,6 +385,7 @@ class Parser {
 
     while (match([ TokSlash, TokStar ])) {
       var op = previous();
+      ignoreNewlines();
       var right = unary();
       expr = new Expr.Binary(expr, op, right);
     }
@@ -379,6 +396,7 @@ class Parser {
   private function unary() {
     if (match([ TokBang, TokMinus ])) {
       var op = previous();
+      ignoreNewlines();
       var right = unary();
       return new Expr.Unary(op, right);
     }
@@ -393,10 +411,13 @@ class Parser {
       if (match([ TokLeftParen ])) {
         expr = finishCall(expr);
       } else if (match([ TokDot ])) {
+        ignoreNewlines();
         var name = consume(TokIdentifier, "Expect property name after '.'.");
         expr = new Expr.Get(expr, name);
       } else if (match([ TokLeftBracket ])) {
+        ignoreNewlines();
         var index = expression();
+        ignoreNewlines();
         consume(TokRightBracket, "Expect ']' after expression");
         expr = new Expr.SubscriptGet(previous(), expr, index);
       } else {
@@ -436,8 +457,9 @@ class Parser {
     if (match([ TokSuper ])) {
       var keyword = previous();
       consume(TokDot, "Expect '.' after 'super'.");
+      ignoreNewlines();
       var method = consume(TokIdentifier, "Expect superclass method name.");
-      return new Expr.Super(keyword, method); 
+      return new Expr.Super(keyword, method);
     }
 
     if (match([ TokThis ])) {
@@ -484,7 +506,7 @@ class Parser {
       do {
         keys.push(consume(TokIdentifier, "Expect identifiers for object keys"));
         consume(TokColon, "Expect colons after object keys");
-        values.push(expression()); 
+        values.push(expression());
       } while (match([ TokComma ]));
     }
 
@@ -506,7 +528,7 @@ class Parser {
   private function consume(type:TokenType, message:String) {
     if (check(type)) return advance();
     throw error(peek(), message);
-  } 
+  }
 
   private function check(type:TokenType):Bool {
     if (isAtEnd()) return false;
@@ -550,24 +572,31 @@ class Parser {
 
   private function parseList<T>(sep:TokenType, end:TokenType, parser:Void->T):Array<T> {
     var items:Array<T> = [];
-    if (!check(end)) {
+    if (!check(end) && !isAtEnd()) {
       do {
+        ignoreNewlines();
         items.push(parser());
-      } while (match([ sep ]));
+      } while (match([ sep ]) && !isAtEnd());
+      ignoreNewlines();
     }
     return items;
   }
 
   private function expectEndOfStatement() {
-    if (match(TokNewline)) {
+    if (match([ TokNewline ])) {
+      ignoreNewlines(); // consume any extras
       return true;
     }
     consume(TokSemicolon, "Expect newline or semicolon after statement");
+    ignoreNewlines(); // consume any newlines
+    return false;
   }
 
   private function ignoreNewlines() {
-    while (check(TokNewline) && !isAtEnd()) {
-      advance();
+    while (!isAtEnd()) {
+      if (!match([ TokNewline ])) {
+        return;
+      }
     }
   }
 

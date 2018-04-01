@@ -10,9 +10,9 @@ import hxlox.Parser;
 
 using haxe.io.Path;
 
-class Interpreter 
-  implements ExprVisitor<Dynamic> 
-  implements StmtVisitor<Dynamic> 
+class Interpreter
+  implements ExprVisitor<Dynamic>
+  implements StmtVisitor<Dynamic>
 {
 
   public var globals:Environment = new Environment();
@@ -69,7 +69,7 @@ class Interpreter
       this.environment = previous;
       throw e; // not the best option, but eh.
     }
-    
+
     this.environment = previous;
   }
 
@@ -230,7 +230,7 @@ class Interpreter
     // if (Std.is(expr.value, String)) {
     //   var string:Class = globals.values.get('String');
     //   return string.call(this, [ expr.value ]);
-    // } 
+    // }
     // else if (Std.is(expr.value, Int)) {
     //   var int:Class = globals.values.get('Int');
     //   return int.call(this, [ expr.value ]);
@@ -264,7 +264,7 @@ class Interpreter
     // "this" is always one level nearer than "super"'s environment.
     var instance:Instance = cast environment.getAt(distance - 1, 'this');
     var method:Function = superclass.findMethod(instance, expr.method.lexeme);
-    
+
     if (method == null) {
       throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
     }
@@ -302,16 +302,16 @@ class Interpreter
     var right = evaluate(expr.right);
 
     return switch(op.type) {
-      case TokMinus: 
+      case TokMinus:
         checkNumberOperands(op, left, right);
         left - right;
-      case TokSlash: 
+      case TokSlash:
         checkNumberOperands(op, left, right);
         left / right;
-      case TokStar: 
+      case TokStar:
         checkNumberOperands(op, left, right);
         left * right;
-      case TokPlus: 
+      case TokPlus:
         if (Std.is(left, Int) && Std.is(right, Int)) {
           left + right;
         } else if (Std.is(left, String) && Std.is(right, String)) {
@@ -324,16 +324,16 @@ class Interpreter
         } else {
           throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
         }
-      case TokGreater: 
+      case TokGreater:
         checkNumberOperands(op, left, right);
         left > right;
-      case TokGreaterEqual: 
+      case TokGreaterEqual:
         checkNumberOperands(op, left, right);
         left >= right;
-      case TokLess: 
+      case TokLess:
         checkNumberOperands(op, left, right);
         left < right;
-      case TokLessEqual: 
+      case TokLessEqual:
         checkNumberOperands(op, left, right);
         left <= right;
       case TokBangEqual: return !isEqual(left, right);
@@ -360,7 +360,7 @@ class Interpreter
       throw new RuntimeError(expr.paren, 'Expected ${callable.arity()} arguments but got ${arguments.length}.');
     }
 
-    return callable.call(this, arguments); 
+    return callable.call(this, arguments);
   }
 
   public function visitGetExpr(expr:Expr.Get):Dynamic {
@@ -375,7 +375,7 @@ class Interpreter
       var inst:Instance = cls.call(this, [ object ]);
       return inst.get(expr.name);
     }
-    
+
     throw new RuntimeError(expr.name, "Only objects have properties.");
   }
 
@@ -410,7 +410,7 @@ class Interpreter
       throw new RuntimeError(expr.end, "Subscripts can only be used on objects with an '__offsetSet' method");
     }
 
-    throw new RuntimeError(expr.end, "Only objects have properties."); 
+    throw new RuntimeError(expr.end, "Only objects have properties.");
   }
 
   public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):Dynamic {
@@ -436,7 +436,7 @@ class Interpreter
   private function isTruthy(obj:Dynamic):Bool {
     if (obj == null) return false;
     if (Std.is(obj, Bool)) return obj;
-    return true; 
+    return true;
   }
 
   private function isEqual(a:Dynamic, b:Dynamic):Bool {
