@@ -1,9 +1,4 @@
-module std.test for (
-  Runner,
-  Result,
-  Status,
-  Case
-)
+module std.test for Runner, Result, Status, Case
 
 class Runner {
 

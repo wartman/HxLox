@@ -105,7 +105,7 @@ class Parser {
   }
 
   private function importDeclaration():Stmt {
-    var path = parseList(TokDot, TokFor, function ():Token {
+    var path = parseList(TokDot, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'import'");
     });
     var alias:Token = null;
@@ -115,11 +115,9 @@ class Parser {
       ignoreNewlines();
       alias = consume(TokIdentifier, "Expect an identifier after `as`");
     } else if (match([ TokFor ])) {
-      consume(TokLeftParen, "Expect '(' after 'import ... for'");
-      items = parseList(TokComma, TokRightParen, function () {
+      items = parseList(TokComma, function () {
         return consume(TokIdentifier, "Expect an identifier");
       });
-      consume(TokRightParen, "Expect ')' after import list");
     } else {
       error(previous(), "Expect a 'for' or an 'as' after an import path");
     }
@@ -129,15 +127,13 @@ class Parser {
   }
 
   private function moduleDeclaration():Stmt {
-    var path = parseList(TokDot, TokFor, function ():Token {
+    var path = parseList(TokDot, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'module'");
     });
     consume(TokFor, "Expect a 'for' after a module path");
-    consume(TokLeftParen, "Expect '(' after 'module ... for'");
-    var items:Array<Token> = parseList(TokComma, TokRightParen, function () {
+    var items:Array<Token> = parseList(TokComma, function () {
       return consume(TokIdentifier, "Expect an identifier");
     });
-    consume(TokRightParen, "Expect ')' after module exports");
 
     // if (check(TokLeftBrace)) {
     //   // inline module stuff here
@@ -436,6 +432,7 @@ class Parser {
         if (arguments.length >= 8) { // limit of 8 for now
           error(peek(), "Cannot have more than 8 arguments.");
         }
+        ignoreNewlines();
         arguments.push(expression());
       } while (match([ TokComma ]));
     }
@@ -492,7 +489,11 @@ class Parser {
   }
 
   private function arrayLiteral():Expr {
-    var values:Array<Expr> = parseList(TokComma, TokRightBracket, expression);
+    var values:Array<Expr> = [];
+    if (!check(TokRightBracket)) {
+      values = parseList(TokComma, expression);
+    }
+    ignoreNewlines(); // May be one after the last item in the list
     var end = consume(TokRightBracket, "Expect ']' after values.");
     return new Expr.ArrayLiteral(end, values);
   }
@@ -504,10 +505,13 @@ class Parser {
 
     if (!check(TokRightBrace)) {
       do {
+        ignoreNewlines();
         keys.push(consume(TokIdentifier, "Expect identifiers for object keys"));
         consume(TokColon, "Expect colons after object keys");
+        ignoreNewlines();
         values.push(expression());
       } while (match([ TokComma ]));
+      ignoreNewlines();
     }
 
     var end = consume(TokRightBrace, "Expect '}' at the end of an object literal");
@@ -570,15 +574,12 @@ class Parser {
     }
   }
 
-  private function parseList<T>(sep:TokenType, end:TokenType, parser:Void->T):Array<T> {
+  private function parseList<T>(sep:TokenType, parser:Void->T):Array<T> {
     var items:Array<T> = [];
-    if (!check(end) && !isAtEnd()) {
-      do {
-        ignoreNewlines();
-        items.push(parser());
-      } while (match([ sep ]) && !isAtEnd());
+    do {
       ignoreNewlines();
-    }
+      items.push(parser());
+    } while (match([ sep ]) && !isAtEnd());
     return items;
   }
 

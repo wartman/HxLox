@@ -210,7 +210,7 @@ class CoreTypes {
         }
 
         map(cb) {
-          var out = [];
+          var out = []
           for (var i = 0; i < this.length(); i = i + 1)
             out.push(cb(__ARRAY_GET(this.values, i), i))
           return out

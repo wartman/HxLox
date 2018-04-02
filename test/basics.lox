@@ -1,6 +1,6 @@
-module test.basics for ( ArrayTest, StringTest )
+module test.basics for ArrayTest, ObjectTest, StringTest
 
-import std.test for ( Case )
+import std.test for Case
 
 class ArrayTest : Case {
 
@@ -18,7 +18,9 @@ class ArrayTest : Case {
   }
 
   testPop() {
-    var arr = [ 1, 2, 3 ]
+    var arr = [ 1, 2,
+      // Check odd whitespace
+      3 ]
     var val = arr.pop()
     this.assertEquals(arr.length(), 2)
     this.assertEquals(val, 3)
@@ -32,6 +34,46 @@ class ArrayTest : Case {
     this.assertEquals(changed[0], 2)
     this.assertEquals(changed[1], 3)
     this.assertEquals(changed[2], 4)
+  }
+
+}
+
+class ObjectTest : Case {
+
+  testCreate() {
+    var obj = {
+      a: 'a',
+      b: // Check odd whitespace
+
+        'b'
+    }
+
+    this.assertEquals(obj.a, 'a')
+    this.assertEquals(obj.b, 'b')
+  }
+
+  testAssign() {
+    var obj = { a:'a', b:'b' }
+    obj.c = 'c'
+    this.assertEquals(obj.a, 'a')
+    this.assertEquals(obj.b, 'b')
+    this.assertEquals(obj.c, 'c')
+  }
+
+  testRecursive() {
+    var obj = {
+      a:'a',
+      b:{
+        c: { c:
+          [
+            // Again, test some odd whitespace
+            'c'
+          ]
+        }
+      }
+    }
+    this.assertEquals(obj.a, 'a')
+    this.assertEquals(obj.b.c.c[0], 'c')
   }
 
 }

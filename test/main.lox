@@ -1,14 +1,15 @@
-module test.main for ( main )
+module test.main for main
 
-import std.test for ( Runner )
+import std.test for Runner
 import test.basics as basics
 import test.core as core
 
 fun main() {
   var runner = Runner()
-  
+
   runner.
     add(basics.ArrayTest()).
+    add(basics.ObjectTest()).
     add(basics.StringTest()).
     add(core.ReflectTest())
 
