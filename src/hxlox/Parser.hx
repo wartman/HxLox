@@ -22,13 +22,14 @@ class Parser {
     return stmts;
   }
 
-  private function declaration():Stmt {
+  private function declaration(?meta:Array<Expr>):Stmt {
     try {
-      if (match([ TokVar ])) return varDeclaration();
-      if (match([ TokFun ])) return functionDeclaration('function');
-      if (match([ TokClass ])) return classDeclaration();
-      if (match([ TokImport ])) return importDeclaration();
-      if (match([ TokModule ])) return moduleDeclaration();
+      if (match([ TokAt ])) return declaration(parseMeta());
+      if (match([ TokVar ])) return varDeclaration(meta);
+      if (match([ TokFun ])) return functionDeclaration('function', meta);
+      if (match([ TokClass ])) return classDeclaration(meta);
+      if (match([ TokImport ])) return importDeclaration(meta);
+      if (match([ TokModule ])) return moduleDeclaration(meta);
       return statement();
     } catch (error:ParserError) {
       synchronize();
@@ -36,7 +37,8 @@ class Parser {
     }
   }
 
-  private function varDeclaration():Stmt {
+  private function varDeclaration(?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
     var name:Token = consume(TokIdentifier, "Expect variable name.");
     var initializer:Expr = null;
     if (match([ TokEqual ])) {
@@ -44,10 +46,11 @@ class Parser {
     }
     expectEndOfStatement();
     // consume(TokSemicolon, "Expect ';' after value.");
-    return new Stmt.Var(name, initializer);
+    return new Stmt.Var(name, initializer, meta);
   }
 
-  private function functionDeclaration(kind:String):Stmt {
+  private function functionDeclaration(kind:String, ?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
     var name:Token;
     if (kind != 'lambda' || check(TokIdentifier)) {
       name = consume(TokIdentifier, 'Expect ${kind} name.');
@@ -72,10 +75,11 @@ class Parser {
 
     ignoreNewlines();
 
-    return new Stmt.Fun(name, params, body);
+    return new Stmt.Fun(name, params, body, meta);
   }
 
-  private function classDeclaration():Stmt {
+  private function classDeclaration(?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
     var name = consume(TokIdentifier, "Expect a class name.");
     var superclass:Expr = null;
 
@@ -91,20 +95,22 @@ class Parser {
     ignoreNewlines();
     while(!check(TokRightBrace) && !isAtEnd()) {
       ignoreNewlines();
+      var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
       if (match([ TokStatic ])) {
-        staticMethods.push(cast functionDeclaration('method'));
+        staticMethods.push(cast functionDeclaration('method', funMeta));
       } else {
-        methods.push(cast functionDeclaration('method'));
+        methods.push(cast functionDeclaration('method', funMeta));
       }
     }
     ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after class body.");
     ignoreNewlines();
 
-    return new Stmt.Class(name, superclass, methods, staticMethods);
+    return new Stmt.Class(name, superclass, methods, staticMethods, meta);
   }
 
-  private function importDeclaration():Stmt {
+  private function importDeclaration(?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
     var path = parseList(TokDot, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'import'");
     });
@@ -123,10 +129,11 @@ class Parser {
     }
 
     expectEndOfStatement();
-    return new Stmt.Import(path, alias, items);
+    return new Stmt.Import(path, alias, items, meta);
   }
 
-  private function moduleDeclaration():Stmt {
+  private function moduleDeclaration(?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
     var path = parseList(TokDot, function ():Token {
       return consume(TokIdentifier, "Expect dot-seperated identifiers for 'module'");
     });
@@ -141,7 +148,7 @@ class Parser {
       expectEndOfStatement();
     // }
 
-    return cast new Stmt.Module(path, items);
+    return cast new Stmt.Module(path, items, meta);
   }
 
   private function statement():Stmt {
@@ -416,6 +423,12 @@ class Parser {
         ignoreNewlines();
         consume(TokRightBracket, "Expect ']' after expression");
         expr = new Expr.SubscriptGet(previous(), expr, index);
+      // } else if (matchSequence([ TokNewline, TokDot ])) {
+      //   // handle stuff like:
+      //   //    foo
+      //   //      .bar
+      //   var name = consume(TokIdentifier, "Expect property name after '.'.");
+      //   expr = new Expr.Get(expr, name);
       } else {
         break;
       }
@@ -519,6 +532,23 @@ class Parser {
     return new Expr.ObjectLiteral(end, keys, values);
   }
 
+  private function parseMeta():Array<Expr> {
+    var meta:Array<Expr> = [];
+    do {
+      var name = consume(TokIdentifier, "Expected identifier after '@'");
+      var items:Array<Expr> = [];
+      if (match([ TokLeftParen ])) {
+        if (!check(TokRightParen)) {
+          items = parseList(TokComma, expression);
+        }
+        consume(TokRightParen, "Expected ')'");
+      }
+      ignoreNewlines();
+      meta.push(new Expr.Metadata(name, items, null));
+    } while (match([ TokAt ]));
+    return meta;
+  }
+
   private function match(types:Array<TokenType>):Bool {
     for (type in types) {
       if (check(type)) {
@@ -529,6 +559,19 @@ class Parser {
     return false;
   }
 
+  private function matchSequence(types:Array<TokenType>):Bool {
+    for (type in types) {
+      if (!check(type)) {
+        return false;
+      }
+    }
+    // Only advance if all checks passed
+    for (_ in types) {
+      advance();
+    }
+    return true;
+  }
+
   private function consume(type:TokenType, message:String) {
     if (check(type)) return advance();
     throw error(peek(), message);
@@ -537,6 +580,11 @@ class Parser {
   private function check(type:TokenType):Bool {
     if (isAtEnd()) return false;
     return peek().type.equals(type);
+  }
+
+  private function checkNext(type:TokenType):Bool {
+    if (isAtEnd()) return false;
+    return peekNext().type.equals(type);
   }
 
   private function advance():Token {
@@ -550,6 +598,10 @@ class Parser {
 
   private function peek():Token {
     return tokens[current];
+  }
+
+  private function peekNext() {
+    return tokens[current + 1];
   }
 
   private function previous():Token {

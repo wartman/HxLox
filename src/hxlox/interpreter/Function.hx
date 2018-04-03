@@ -7,17 +7,24 @@ class Function implements Callable {
   private var declaration:Fun;
   private var closure:Environment;
   private var isInitializer:Bool;
+  @:isVar public var meta(default, null):Map<String, Array<Dynamic>>;
 
-  public function new(declaration:Fun, closure:Environment, isInitializer:Bool) {
+  public function new(
+    declaration:Fun,
+    closure:Environment,
+    isInitializer:Bool,
+    meta:Map<String, Array<Dynamic>>
+  ) {
     this.declaration = declaration;
     this.closure = closure;
     this.isInitializer = isInitializer;
+    this.meta = meta;
   }
 
   public function bind(instance:Object) {
     var environment = new Environment(closure);
     environment.define('this', instance);
-    return new Function(declaration, environment, isInitializer);
+    return new Function(declaration, environment, isInitializer, meta);
   }
 
   public function arity():Int {

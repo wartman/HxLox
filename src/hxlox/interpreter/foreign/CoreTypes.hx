@@ -75,6 +75,33 @@ class CoreTypes {
       var arr:Instance = arrCls.call(interpreter, [ names ]);
       return arr;
     }, 1));
+    globals.define('__REFLECT_GET_METADATA', new ExternCallable(function (args) {
+      var target = args[0];
+      var name:String = Std.string(args[1]);
+      var items:Array<Dynamic> = null;
+      if (Std.is(target, hxlox.interpreter.Class)) {
+        var cls:hxlox.interpreter.Class = cast target;
+        if (cls.meta.exists(name)) {
+          items = cls.meta.get(name);
+        }
+      } else if (Std.is(target, hxlox.interpreter.Function)) {
+        var cls:hxlox.interpreter.Function = cast target;
+        if (cls.meta.exists(name)) {
+          items = cls.meta.get(name);
+        }
+      } else {
+        // throw an error :P.
+        // need to figure out how to get the right line and all that
+      }
+
+      if (items == null) {
+        return null;
+      }
+
+      // todo: handle module and imports
+      var arrCls:Class = globals.values.get('Array');
+      return arrCls.call(interpreter, [ items ]);
+    }, 2));
 
     // Array hooks
     globals.define('__ARRAY_GET', new ExternCallable(function (args) {
@@ -144,7 +171,7 @@ class CoreTypes {
         }
 
         static getCwd() {
-          return __SYSTEM_GET_CWD();
+          return __SYSTEM_GET_CWD()
         }
 
       }
@@ -152,24 +179,28 @@ class CoreTypes {
       class Reflect {
 
         static getType(cls) {
-          return __REFLECT_TYPE(cls);
+          return __REFLECT_TYPE(cls)
         }
 
         static is(a, b) {
           // Todo: need to be able to check superclasses.
-          return this.getType(a) == this.getType(b);
+          return this.getType(a) == this.getType(b)
         }
 
         static getMethod(obj, name) {
-          return __REFLECT_GET_METHOD(obj, name);
+          return __REFLECT_GET_METHOD(obj, name)
         }
 
         static getMethodNames(cls) {
-          return __REFLECT_GET_METHOD_NAMES(cls);
+          return __REFLECT_GET_METHOD_NAMES(cls)
         }
 
         static getField(cls, name) {
-          return __REFLECT_GET_FIELD(cls, name);
+          return __REFLECT_GET_FIELD(cls, name)
+        }
+
+        static getMetadata(target, name) {
+          return __REFLECT_GET_METADATA(target, name)
         }
 
       }
@@ -177,7 +208,7 @@ class CoreTypes {
       class Exception {
 
         init(message) {
-          this.message = message;
+          this.message = message
         }
 
       }
@@ -185,35 +216,42 @@ class CoreTypes {
       class Array {
 
         init(values) {
-          this.values = values;
+          this.values = values
         }
 
         __offsetGet(i) {
-          return __ARRAY_GET(this.values, i);
+          return __ARRAY_GET(this.values, i)
         }
 
         __offsetSet(i, value) {
-          __ARRAY_SET(this.values, i, value);
+          __ARRAY_SET(this.values, i, value)
         }
 
         length() {
-          return __ARRAY_LENGTH(this.values);
+          return __ARRAY_LENGTH(this.values)
         }
 
         push(value) {
-          __ARRAY_PUSH(this.values, value);
-          return this.length();
+          __ARRAY_PUSH(this.values, value)
+          return this.length()
         }
 
         pop() {
-          return __ARRAY_POP(this.values);
+          return __ARRAY_POP(this.values)
         }
 
         map(cb) {
           var out = []
-          for (var i = 0; i < this.length(); i = i + 1)
+          for (var i = 0; i < this.length(); i = i + 1) {
             out.push(cb(__ARRAY_GET(this.values, i), i))
+          }
           return out
+        }
+
+        forEach(cb) {
+          for (var i = 0; i < this.length(); i = i + 1) {
+            cb(__ARRAY_GET(this.values, i))
+          }
         }
 
       }
@@ -221,7 +259,7 @@ class CoreTypes {
       class Object {
 
         __offsetGet(key) {
-          return Reflect.getField(this, key);
+          return Reflect.getField(this, key)
         }
 
       }
@@ -229,23 +267,23 @@ class CoreTypes {
       class String {
 
         init(value) {
-          this.value = value;
+          this.value = value
         }
 
         indexOf(find) {
-          return __STRING_INDEX_OF(this.value, find);
+          return __STRING_INDEX_OF(this.value, find)
         }
 
         split(sep) {
-          return __STRING_SPLIT(this.value, sep);
+          return __STRING_SPLIT(this.value, sep)
         }
 
         substring(start, end) {
-          return __STRING_SUBSTRING(this.value, start, end);
+          return __STRING_SUBSTRING(this.value, start, end)
         }
 
         toString() {
-          return this.value;
+          return this.value
         }
 
       }

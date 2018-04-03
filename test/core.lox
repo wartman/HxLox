@@ -4,10 +4,12 @@ import std.test for Case
 
 class ReflectTest : Case {
 
+  @test('works')
   testGetType() {
     this.assertEquals(Reflect.getType(ReflectTest), 'ReflectTest');
   }
 
+  @test('works')
   testIs() {
     this.assertTrue(Reflect.is(ReflectTest, ReflectTest));
     this.assertTrue(Reflect.is(ReflectTest, Case));

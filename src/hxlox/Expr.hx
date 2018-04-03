@@ -5,6 +5,12 @@ interface Expr {
   public function accept<T>(visitor:ExprVisitor<T>):T;
 }
 
+class Metadata implements Expr {
+  var name:Token;
+  var args:Array<Expr>;
+  var expr:Expr;
+}
+
 class Assign implements Expr {
   var name:Token;
   var value:Expr;

@@ -69,6 +69,7 @@ class Scanner {
       case ';': addToken(TokSemicolon);
       case ':': addToken(TokColon);
       case '*': addToken(TokStar);
+      case '@': addToken(TokAt);
       case '!': addToken(match('=') ? TokBangEqual : TokBang);
       case '=': addToken(match('=') ? TokEqualEqual : TokEqual);
       case '<': addToken(match('=') ? TokLessEqual : TokLess);

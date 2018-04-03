@@ -10,9 +10,9 @@ import hxlox.interpreter.ClassType;
 
 using Lambda;
 
-class Resolver 
-  implements ExprVisitor<Void> 
-  implements StmtVisitor<Void> 
+class Resolver
+  implements ExprVisitor<Void>
+  implements StmtVisitor<Void>
 {
 
   private var interpreter:Interpreter;
@@ -93,7 +93,7 @@ class Resolver
     resolveExpr(expr.callee);
     expr.args.foreach(function (expr) {
       resolveExpr(expr);
-      return true; 
+      return true;
     });
   }
 
@@ -181,8 +181,8 @@ class Resolver
       resolveFunction(method, type);
     }
     endScope();
-    
-    if (stmt.superclass != null) { 
+
+    if (stmt.superclass != null) {
       endScope();
     }
 
@@ -213,6 +213,10 @@ class Resolver
       HxLox.error(expr.name, "Cannot read local variable in its own initializer.");
     }
     resolveLocal(expr, expr.name);
+  }
+
+  public function visitMetadataExpr(expr:Expr.Metadata):Void {
+    // noop
   }
 
   public function visitAssignExpr(expr:Expr.Assign):Void {

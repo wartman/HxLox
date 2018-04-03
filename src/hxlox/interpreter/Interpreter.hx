@@ -88,13 +88,13 @@ class Interpreter
   }
 
   public function visitFunStmt(stmt:Stmt.Fun):Dynamic {
-    var fun:Function = new Function(stmt, environment, false);
+    var fun:Function = new Function(stmt, environment, false, new Map());
     environment.define(stmt.name.lexeme, fun);
     return null;
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):Dynamic {
-    var fun:Function = new Function(cast expr.fun, environment, false);
+    var fun:Function = new Function(cast expr.fun, environment, false, new Map());
     return fun;
   }
 
@@ -111,17 +111,29 @@ class Interpreter
       environment.define('super', superclass);
     }
 
+    var meta:Map<String, Array<Dynamic>> = intrepretMetadata(stmt.meta);
     var methods:Map<String, Function> = new Map();
     var staticMethods:Map<String, Function> = new Map();
+
     for (method in stmt.methods) {
-      var fun = new Function(method, environment, method.name.lexeme == 'init');
+      var funMeta = intrepretMetadata(method.meta);
+      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
       methods.set(method.name.lexeme, fun);
     }
+
     for (method in stmt.staticMethods) {
-      var fun = new Function(method, environment, method.name.lexeme == 'init');
+      var funMeta = intrepretMetadata(method.meta);
+      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
       staticMethods.set(method.name.lexeme, fun);
     }
-    var cls = new Class(stmt.name.lexeme, (cast superclass), methods, staticMethods);
+
+    var cls = new Class(
+      stmt.name.lexeme,
+      (cast superclass),
+      methods,
+      staticMethods,
+      meta
+    );
 
     if (superclass != null) {
       environment = environment.enclosing;
@@ -213,6 +225,11 @@ class Interpreter
     }
     environment.define(stmt.name.lexeme, value);
     return null;
+  }
+
+  public function visitMetadataExpr(expr:Expr.Metadata) {
+    // todo: handle metadata?
+    return evaluate(expr.expr);
   }
 
   public function visitAssignExpr(expr:Expr.Assign) {
@@ -431,6 +448,20 @@ class Interpreter
       inst.set(expr.keys[i], evaluate(expr.values[i]));
     }
     return inst;
+  }
+
+  private function intrepretMetadata(items:Array<Expr>):Map<String, Array<Dynamic>> {
+    var meta:Map<String, Array<Dynamic>> = new Map();
+    for (m in items) {
+      var entry:Expr.Metadata = cast m;
+      var name = entry.name.lexeme;
+      var items:Array<Dynamic> = [];
+      for (expr in entry.args) {
+        items.push(evaluate(expr));
+      }
+      meta.set(name, items);
+    }
+    return meta;
   }
 
   private function isTruthy(obj:Dynamic):Bool {

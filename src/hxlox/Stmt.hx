@@ -13,16 +13,19 @@ class Import implements Stmt {
   var path:Array<Token>;
   var alias:Token;
   var imports:Array<Token>;
+  var meta:Array<Expr>;
 }
 
 class Module implements Stmt {
   var path:Array<Token>;
   var exports:Array<Token>;
+  var meta:Array<Expr>;
 }
 
 class Var implements Stmt {
   var name:Token;
   var initializer:Expr;
+  var meta:Array<Expr>;
 }
 
 class Throw implements Stmt {
@@ -55,6 +58,7 @@ class Fun implements Stmt {
   var name:Token;
   var params:Array<Token>;
   var body:Array<Stmt>;
+  var meta:Array<Expr>;
 }
 
 class Return implements Stmt {
@@ -67,4 +71,5 @@ class Class implements Stmt {
   var superclass:Expr;
   var methods:Array<Stmt.Fun>;
   var staticMethods:Array<Stmt.Fun>;
+  var meta:Array<Expr>;
 }

@@ -1,4 +1,8 @@
-module std.test for Runner, Result, Status, Case
+module std.test for
+  Runner,
+  Result,
+  Status,
+  Case
 
 class Runner {
 
@@ -26,23 +30,31 @@ class Runner {
     return this.result.wasSuccessful()
   }
 
-  runCase(case) {
-    var className = Reflect.getType(case)
-    var methods = Reflect.getMethodNames(case)
+  runCase(c) {
+    var className = Reflect.getType(c)
+    var methods = Reflect.getMethodNames(c)
+    var before = this.getBeforeMethods(c)
+    var after = this.getAfterMethods(c)
+
     this.print('Class: ' + className + ' ')
+
     for (var i = 0; i < methods.length(); i = i + 1) {
       var methodName = methods[i]
-      if (methodName.indexOf('test') == 0) {
-        var method = Reflect.getMethod(case, methodName)
-        case.currentTest = Status(className, methodName)
+      var method = Reflect.getMethod(c, methodName)
+      var testInfo = Reflect.getMetadata(method, 'test')
+      if (testInfo != null) {
+
+        c.currentTest = Status(className, methodName)
+        before.forEach(fun (m) { m(); })
+
         try {
           method()
-          if (case.currentTest.isDone()) {
-            case.currentTest.success = true
+          if (c.currentTest.isDone()) {
+            c.currentTest.success = true
             this.print('.')
           } else {
-            case.currentTest.success = false
-            case.currentTest.error = "(warning) no assert"
+            c.currentTest.success = false
+            c.currentTest.error = "(warning) no assert"
             this.print('W')
           }
         } catch (e) {
@@ -50,12 +62,36 @@ class Runner {
           if (Reflect.getType(e) == 'Status') {
             e = e.error
           }
-          case.currentTest.error = "exception thrown: " + e
+          c.currentTest.error = "exception thrown: " + e
         }
+
+        after.forEach(fun (a) { a(); })
+        this.result.add(c.currentTest)
+
       }
-      this.result.add(case.currentTest)
     }
+
     this.print('\n')
+  }
+
+  getBeforeMethods(c) {
+    return this.getMarkedMethods(c, 'before')
+  }
+
+  getAfterMethods(c) {
+    return this.getMarkedMethods(c, 'after')
+  }
+
+  getMarkedMethods(c, name) {
+    var marked = [];
+    Reflect.getMethodNames(c).forEach(fun (methodName) {
+      var method = Reflect.getMethod(c, methodName)
+      var meta = Reflect.getMetadata(method, name)
+      if (meta != null) {
+        marked.push(method)
+      }
+    })
+    return marked
   }
 
 }

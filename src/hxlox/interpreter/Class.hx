@@ -4,14 +4,22 @@ class Class extends Instance implements Callable {
 
   public var name:String;
   public var superclass:Class;
+  @:isVar public var meta(default, null):Map<String, Array<Dynamic>>;
   @:isVar public var methods(default, null):Map<String, Function>;
-  private var staticMethods:Map<String, Function>;
+  @:isVar public var staticMethods(default, null):Map<String, Function>;
 
-  public function new(name:String, superclass:Class, methods:Map<String, Function>, staticMethods:Map<String, Function>) {
+  public function new(
+    name:String,
+    superclass:Class,
+    methods:Map<String, Function>,
+    staticMethods:Map<String, Function>,
+    meta:Map<String, Array<Dynamic>>
+  ) {
     this.name = name;
     this.superclass = superclass;
     this.methods = methods;
     this.staticMethods = staticMethods;
+    this.meta = meta;
     super(this);
   }
 
