@@ -4,6 +4,7 @@ import sys.io.File;
 import hxlox.Token;
 import hxlox.Parser;
 import hxlox.Scanner;
+import hxlox.DefaultErrorReporter;
 import hxlox.interpreter.DefaultModuleLoader;
 import hxlox.interpreter.RuntimeError;
 import hxlox.interpreter.Resolver;
@@ -21,7 +22,7 @@ class HxLox {
     if (args.length > 1) {
       Sys.print('Usage: hxlox [script]');
     } else if (args.length == 1) {
-      runFile(args[0]);  
+      runFile(args[0]);
     } else {
       runPrompt();
     }
@@ -39,8 +40,8 @@ class HxLox {
     Sys.println('Program root: ${root}');
     Sys.println('---');
 
-    run(bytes.toString(), root);
-    
+    run(bytes.toString(), root, path);
+
     if (hadError) Sys.exit(65);
     if (hadRuntimeError) Sys.exit(70);
   }
@@ -55,13 +56,14 @@ class HxLox {
     }
   }
 
-  private static function run(source:String, root:String) {
+  private static function run(source:String, root:String, path:String = '<unknown>') {
+    var reporter = new DefaultErrorReporter();
     var loader = new DefaultModuleLoader(root);
-    var scanner = new Scanner(source);
+    var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens);
+    var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
-    var interpreter = new Interpreter(loader);
+    var interpreter = new Interpreter(loader, reporter);
     var resolver = new Resolver(interpreter);
 
     resolver.resolve(stmts);
@@ -69,28 +71,28 @@ class HxLox {
     interpreter.interpret(stmts);
   }
 
-  public static function runtimeError(error:RuntimeError) {
-    Sys.println(error.message + "\n[line " + error.token.line + ']');
-    hadRuntimeError = true;
-  }
-
-  public static function error(token:{
-    line:Int,
-    ?lexeme:String,
-    ?type:hxlox.TokenType
-  }, message:String) {
-    if (token.type == null) {
-      report(token.line, '', message);
-    } else if (token.type.equals(hxlox.TokenType.TokEof)) {
-      report(token.line, " at end", message);
-    } else {
-      report(token.line, " at '" + token.lexeme + "'", message);
-    }
-  }
-
-  private static function report(line:Int, where:String, message:String) {
-    Sys.println('[line $line] Error${where}: ${message}');
-    hadError = true;
-  }
+  // public static function runtimeError(error:RuntimeError) {
+  //   Sys.println(error.message + "\n[line " + error.token.line + ']');
+  //   hadRuntimeError = true;
+  // }
+  //
+  // public static function error(token:{
+  //   line:Int,
+  //   ?lexeme:String,
+  //   ?type:hxlox.TokenType
+  // }, message:String) {
+  //   if (token.type == null) {
+  //     report(token.line, '', message);
+  //   } else if (token.type.equals(hxlox.TokenType.TokEof)) {
+  //     report(token.line, " at end", message);
+  //   } else {
+  //     report(token.line, " at '" + token.lexeme + "'", message);
+  //   }
+  // }
+  //
+  // private static function report(line:Int, where:String, message:String) {
+  //   Sys.println('[line $line] Error${where}: ${message}');
+  //   hadError = true;
+  // }
 
 }

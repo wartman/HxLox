@@ -8,9 +8,11 @@ class Parser {
 
   private var tokens:Array<Token>;
   private var current:Int = 0;
+  private var reporter:ErrorReporter;
 
-  public function new(tokens:Array<Token>) {
+  public function new(tokens:Array<Token>, reporter:ErrorReporter) {
     this.tokens = tokens;
+    this.reporter = reporter;
   }
 
   public function parse():Array<Stmt> {
@@ -55,7 +57,7 @@ class Parser {
     if (kind != 'lambda' || check(TokIdentifier)) {
       name = consume(TokIdentifier, 'Expect ${kind} name.');
     } else {
-      name = new Token(TokIdentifier, '<annonymous>', '<annonymous>', previous().line);
+      name = new Token(TokIdentifier, '<annonymous>', '<annonymous>', previous().pos);
     }
 
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
@@ -324,7 +326,7 @@ class Parser {
   private function or() {
     var expr:Expr = and();
 
-    while (match([ TokOr ])) {
+    while (match([ TokBoolOr ])) {
       var operator = previous();
       var right = and();
       expr = new Expr.Logical(expr, operator, right);
@@ -336,7 +338,7 @@ class Parser {
   private function and() {
     var expr:Expr = equality();
 
-    while (match([ TokAnd ])) {
+    while (match([ TokBoolAnd ])) {
       var operator = previous();
       var right = equality();
       expr = new Expr.Logical(expr, operator, right);
@@ -609,7 +611,8 @@ class Parser {
   }
 
   private function error(token:Token, message:String) {
-    HxLox.error(token, message);
+    reporter.report(token.pos, token.lexeme, message);
+    // HxLox.error(token, message);
     return new ParserError();
   }
 

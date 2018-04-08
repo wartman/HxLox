@@ -50,10 +50,10 @@ class Resolver
 
   public function visitReturnStmt(stmt:Stmt.Return):Void {
     if (currentFunction.equals(FunNone)) {
-      HxLox.error(stmt.keyword, "Cannot return from top-level code.");
+      error(stmt.keyword, "Cannot return from top-level code.");
     }
     if (currentFunction.equals(FunInitializer)) {
-      HxLox.error(stmt.keyword, "Cannot return a value from an initializer");
+      error(stmt.keyword, "Cannot return a value from an initializer");
     }
     if (stmt.value != null) {
       resolveExpr(stmt.value);
@@ -132,16 +132,16 @@ class Resolver
 
   public function visitSuperExpr(expr:Expr.Super):Void {
     if (currentClass.equals(ClsNone)) {
-      HxLox.error(expr.keyword,  "Cannot use 'super' outside of a class.");
+      error(expr.keyword,  "Cannot use 'super' outside of a class.");
     } else if (!currentClass.equals(ClsSubClass)) {
-      HxLox.error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
+      error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
     }
     resolveLocal(expr, expr.keyword);
   }
 
   public function visitThisExpr(expr:Expr.This):Void {
     if (currentClass.equals(ClsNone)) {
-      HxLox.error(expr.keyword, "Cannot use 'this' outside of a class.");
+      error(expr.keyword, "Cannot use 'this' outside of a class.");
       return;
     }
     resolveLocal(expr, expr.keyword);
@@ -210,7 +210,7 @@ class Resolver
 
   public function visitVariableExpr(expr:Expr.Variable):Void {
     if (!scopes.empty() && scopes[scopes.length - 1].get(expr.name.lexeme) == false) {
-      HxLox.error(expr.name, "Cannot read local variable in its own initializer.");
+      error(expr.name, "Cannot read local variable in its own initializer.");
     }
     resolveLocal(expr, expr.name);
   }
@@ -273,7 +273,7 @@ class Resolver
     }
     var scope = scopes[scopes.length - 1];
     if (scope.exists(name.lexeme)) {
-      HxLox.error(name, "Variable with this name already declared in this scope.");
+      error(name, "Variable with this name already declared in this scope.");
     }
     scope.set(name.lexeme, false);
   }
@@ -295,6 +295,10 @@ class Resolver
       }
       i--;
     }
+  }
+
+  private function error(token:Token, message:String) {
+    interpreter.reporter.report(token.pos, token.lexeme, message);
   }
 
 }

@@ -42,7 +42,13 @@ class Runner {
       var methodName = methods[i]
       var method = Reflect.getMethod(c, methodName)
       var testInfo = Reflect.getMetadata(method, 'test')
+      
       if (testInfo != null) {
+
+        var label = '';
+        if (testInfo.length() > 0) {
+          label = testInfo.join('\n')
+        }
 
         c.currentTest = Status(className, methodName)
         before.forEach(fun (m) { m(); })
@@ -62,7 +68,8 @@ class Runner {
           if (Reflect.getType(e) == 'Status') {
             e = e.error
           }
-          c.currentTest.error = "exception thrown: " + e
+          c.currentTest.error = "exception thrown: " + e +
+            '\n' + label
         }
 
         after.forEach(fun (a) { a(); })

@@ -7,6 +7,8 @@ import hxlox.ExprVisitor;
 import hxlox.StmtVisitor;
 import hxlox.Scanner;
 import hxlox.Parser;
+import hxlox.ErrorReporter;
+import hxlox.DefaultErrorReporter;
 
 using haxe.io.Path;
 
@@ -17,6 +19,7 @@ class Interpreter
 
   public var globals:Environment = new Environment();
   public var currentModule:Module;
+  public var reporter:ErrorReporter;
   private var environment:Environment;
   private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
@@ -25,11 +28,15 @@ class Interpreter
     'String' => 'String'
   ];
 
-  public function new(?loader:ModuleLoader) {
+  public function new(?loader:ModuleLoader, ?reporter:ErrorReporter) {
     if (loader == null) {
       loader = new DefaultModuleLoader(Sys.getCwd());
     }
+    if (reporter == null) {
+      reporter = new DefaultErrorReporter();
+    }
     this.loader = loader;
+    this.reporter = reporter;
     environment = globals;
     currentModule = new Module('root', globals, []);
 
@@ -43,8 +50,9 @@ class Interpreter
         execute(stmt);
       }
     } catch (error:RuntimeError) {
-      Sys.println('In ' + currentModule.toString());
-      HxLox.runtimeError(error);
+      // Sys.println('In ' + currentModule.toString());
+      // HxLox.runtimeError(error);
+      reporter.report(error.token.pos, error.token.lexeme, error.message);
     }
   }
 
@@ -149,7 +157,7 @@ class Interpreter
       var obj:Class = globals.values.get('Object');
       var mod:Instance = obj.call(this, []);
       for (name in module.exports) {
-        var tok:Token = new Token(TokIdentifier, name, '', stmt.alias.line);
+        var tok:Token = new Token(TokIdentifier, name, '', stmt.alias.pos);
         mod.set(tok, module.get(tok));
       }
       environment.define(stmt.alias.lexeme, mod);
@@ -257,7 +265,7 @@ class Interpreter
 
   public function visitLogicalExpr(expr:Expr.Logical):Dynamic {
     var left = evaluate(expr.left);
-    if (expr.op.type.equals(TokOr)) {
+    if (expr.op.type.equals(TokBoolOr)) {
       if (isTruthy(left)) return left;
     } else {
       if (!isTruthy(left)) return left;
@@ -355,7 +363,8 @@ class Interpreter
         left <= right;
       case TokBangEqual: return !isEqual(left, right);
       case TokEqualEqual: return isEqual(left, right);
-      default: null;
+      default:
+        throw new RuntimeError(op, 'Invalid operator');
     }
   }
 
@@ -527,9 +536,9 @@ class Interpreter
     var previousEnv = environment;
     var previousModule = currentModule;
 
-    var scanner = new Scanner(source);
+    var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens);
+    var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
     var resolver = new Resolver(this);
 

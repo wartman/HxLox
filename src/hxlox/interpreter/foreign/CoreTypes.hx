@@ -15,6 +15,7 @@ class CoreTypes {
 
   public static function addCoreTypes(interpreter:Interpreter) {
     var globals = interpreter.globals;
+    var reporter = interpreter.reporter;
 
     // System hooks
     globals.define('__SYSTEM_PRINT', new ExternCallable(function (args) {
@@ -128,6 +129,11 @@ class CoreTypes {
       var values:Array<Dynamic> = args[0];
       return values.pop();
     }, 1));
+    globals.define('__ARRAY_JOIN', new ExternCallable(function (args) {
+      var values:Array<Dynamic> = args[0];
+      var glue:String = Std.string(args[1]);
+      return values.join(glue);
+    }, 2));
 
     // Generic literal hooks
     globals.define('__LITERAL_ADD', new ExternCallable(function (args) {
@@ -254,6 +260,10 @@ class CoreTypes {
           }
         }
 
+        join(glue) {
+          return __ARRAY_JOIN(this.values, glue)
+        }
+
       }
 
       class Object {
@@ -288,10 +298,10 @@ class CoreTypes {
 
       }
 
-    ");
+    ", '<core>', reporter);
 
     var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens);
+    var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
     var resolver = new Resolver(interpreter);
 

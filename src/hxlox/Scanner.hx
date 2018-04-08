@@ -5,7 +5,6 @@ import hxlox.TokenType;
 class Scanner {
 
   private static var keywords:Map<String, TokenType> = [
-    "and" => TokAnd,
     "class" => TokClass,
     "else" => TokElse,
     "false" => TokFalse,
@@ -13,7 +12,6 @@ class Scanner {
     "for" => TokFor,
     "if" => TokIf,
     "null" => TokNull,
-    "or" => TokOr,
     "return" => TokReturn,
     "super" => TokSuper,
     "this" => TokThis,
@@ -35,9 +33,13 @@ class Scanner {
   private var start:Int = 0;
   private var current:Int = 0;
   private var line:Int = 1;
+  private var reporter:ErrorReporter;
+  private var file:String;
 
-  public function new(source:String) {
+  public function new(source:String, file:String, reporter:ErrorReporter) {
     this.source = source;
+    this.file = file;
+    this.reporter = reporter;
   }
 
   public function scanTokens():Array<Token> {
@@ -45,7 +47,7 @@ class Scanner {
       start = current;
       scanToken();
     }
-    tokens.push(new Token(TokEof, '', null, line));
+    tokens.push(new Token(TokEof, '', null, {line: line, offset: current, file: file}));
     return tokens;
   }
 
@@ -62,6 +64,8 @@ class Scanner {
       case '}': addToken(TokRightBrace);
       case '[': addToken(TokLeftBracket);
       case ']': addToken(TokRightBracket);
+      case '|': addToken(match('|') ? TokBoolOr : TokPipe);
+      case '&': addToken(match('&') ? TokBoolAnd : TokAnd);
       case ',': addToken(TokComma);
       case '.': addToken(TokDot);
       case '-': addToken(TokMinus);
@@ -91,7 +95,12 @@ class Scanner {
         } else if (isAlpha(c)) {
           identifier();
         } else {
-          HxLox.error({ line: line }, 'Unexpected character: $c');
+          reporter.report({
+            line: line,
+            offset: current,
+            file: file
+          }, c, 'Unexpected character: $c');
+          // HxLox.error({ line: line }, 'Unexpected character: $c');
         }
     }
   }
@@ -128,7 +137,12 @@ class Scanner {
       advance();
     }
     if (isAtEnd()) {
-      HxLox.error({ line: line }, 'Unterminated string.');
+      reporter.report({
+        line: line,
+        offset: current,
+        file: file
+      }, '<EOF>', 'Unterminated string.');
+      // HxLox.error({ line: line }, 'Unterminated string.');
       return;
     }
 
@@ -194,7 +208,12 @@ class Scanner {
 
   private function addToken(type:TokenType, ?literal:Dynamic) {
     var text = source.substring(start, current);
-    tokens.push(new Token(type, text, literal, line));
+    var pos:Position = {
+      line: line,
+      offset: current,
+      file: file
+    };
+    tokens.push(new Token(type, text, literal, pos));
   }
 
 }

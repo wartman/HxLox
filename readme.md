@@ -28,9 +28,6 @@ You could also compile the code with any other Haxe target that supports the `sy
 Notes
 -----
 
-This branch extends Lox a bit to add the following features:
+Basically this branch has left Lox behind and is doing its own thing.
 
-- Imports
-- Static methods
-- Array and Object literals.
-- `print` is no longer built-in -- use `System.print` instead.
+Its own, poorly tested thing.
