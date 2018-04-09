@@ -1,4 +1,6 @@
--main HxLox
+-main Quirk
 -cp src
 
--neko bin/hxlox.n
+-resource std/primitives.qrk@primitives
+
+-neko bin/quirk.n

@@ -1,0 +1,143 @@
+// Note: these types are placed in globals, so we
+// don't define a module up top. This file is
+// never directly imported -- instead, it is
+// handled as a Haxe resource. The special
+// `__` prefixed functions are defined there.
+//
+// I'm thinking up a better way to handle extern hooks :P.
+
+class System {
+
+  static print(s) {
+    __SYSTEM_PRINT(s)
+  }
+
+  static println(s) {
+    __SYSTEM_PRINT_LN(s)
+  }
+
+  static getModule() {
+    return __SYSTEM_GET_MODULE()
+  }
+
+  static getCwd() {
+    return __SYSTEM_GET_CWD()
+  }
+
+}
+
+class Reflect {
+
+  static getType(cls) {
+    return __REFLECT_TYPE(cls)
+  }
+
+  static is(a, b) {
+    // Todo: need to be able to check superclasses.
+    return this.getType(a) == this.getType(b)
+  }
+
+  static getMethod(obj, name) {
+    return __REFLECT_GET_METHOD(obj, name)
+  }
+
+  static getMethodNames(cls) {
+    return __REFLECT_GET_METHOD_NAMES(cls)
+  }
+
+  static getField(cls, name) {
+    return __REFLECT_GET_FIELD(cls, name)
+  }
+
+  static getMetadata(target, name) {
+    return __REFLECT_GET_METADATA(target, name)
+  }
+
+}
+
+class Exception {
+
+  init(message) {
+    this.message = message
+  }
+
+}
+
+class Array {
+
+  init(values) {
+    this.values = values
+  }
+
+  __offsetGet(i) {
+    return __ARRAY_GET(this.values, i)
+  }
+
+  __offsetSet(i, value) {
+    __ARRAY_SET(this.values, i, value)
+  }
+
+  length() {
+    return __ARRAY_LENGTH(this.values)
+  }
+
+  push(value) {
+    __ARRAY_PUSH(this.values, value)
+    return this.length()
+  }
+
+  pop() {
+    return __ARRAY_POP(this.values)
+  }
+
+  map(cb) {
+    var out = []
+    for (var i = 0; i < this.length(); i = i + 1) {
+      out.push(cb(__ARRAY_GET(this.values, i), i))
+    }
+    return out
+  }
+
+  forEach(cb) {
+    for (var i = 0; i < this.length(); i = i + 1) {
+      cb(__ARRAY_GET(this.values, i))
+    }
+  }
+
+  join(glue) {
+    return __ARRAY_JOIN(this.values, glue)
+  }
+
+}
+
+class Object {
+
+  __offsetGet(key) {
+    return Reflect.getField(this, key)
+  }
+
+}
+
+class String {
+
+  init(value) {
+    this.value = value
+  }
+
+  indexOf(find) {
+    return __STRING_INDEX_OF(this.value, find)
+  }
+
+  split(sep) {
+    return __STRING_SPLIT(this.value, sep)
+  }
+
+  substring(start, end) {
+    return __STRING_SUBSTRING(this.value, start, end)
+  }
+
+  toString() {
+    return this.value
+  }
+
+}
