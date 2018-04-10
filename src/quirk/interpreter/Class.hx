@@ -24,14 +24,14 @@ class Class extends Instance implements Callable {
   }
 
   public function arity():Int {
-    var initializer = methods.get("init");
+    var initializer = methods.get("new");
     if (initializer == null) return 0;
     return initializer.arity();
   }
 
   public function call(interpreter:Interpreter, args:Array<Dynamic>):Dynamic {
     var instance = new Instance(this);
-    var initializer = methods.get('init');
+    var initializer = methods.get('new');
     if (initializer != null) {
       initializer.bind(instance).call(interpreter, args);
     }

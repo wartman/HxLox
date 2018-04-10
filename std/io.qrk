@@ -1,0 +1,5 @@
+module std.io for readFile, writeFile
+
+@extern fun readFile(path:String):String {}
+
+@extern fun writeFile(path:String, data:String):Void {}

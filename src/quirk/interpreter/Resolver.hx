@@ -175,7 +175,7 @@ class Resolver
     scopes[scopes.length - 1].set('this', true);
     for (method in stmt.methods) {
       var type = FunMethod;
-      if (method.name.lexeme == 'init') {
+      if (method.name.lexeme == 'new') {
         type = FunInitializer;
       }
       resolveFunction(method, type);
@@ -246,8 +246,8 @@ class Resolver
 
     beginScope();
     for (param in fun.params) {
-      declare(param);
-      define(param);
+      declare(param.name);
+      define(param.name);
     }
     resolve(fun.body);
     endScope();

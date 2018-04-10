@@ -26,6 +26,7 @@ class Var implements Stmt {
   var name:Token;
   var initializer:Expr;
   var meta:Array<Expr>;
+  var type:Type;
 }
 
 class Throw implements Stmt {
@@ -56,7 +57,12 @@ class If implements Stmt {
 
 class Fun implements Stmt {
   var name:Token;
-  var params:Array<Token>;
+  var params:Array<{
+    name: Token,
+    ?type: Type,
+    ?value: Expr
+  }>;
+  var ret:Type;
   var body:Array<Stmt>;
   var meta:Array<Expr>;
 }

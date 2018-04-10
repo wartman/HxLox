@@ -2,8 +2,7 @@ package;
 
 import sys.io.File;
 import quirk.Token;
-import quirk.Parser;
-import quirk.Scanner;
+import quirk.Compiler;
 import quirk.DefaultErrorReporter;
 import quirk.DefaultModuleLoader;
 import quirk.interpreter.RuntimeError;
@@ -45,19 +44,27 @@ class Quirk {
   }
 
   private static function run(root:String, path:String = '<unknown>') {
-    var reporter = new DefaultErrorReporter();
     var loader = new DefaultModuleLoader(root);
-    var source = loader.load(path);
-    var scanner = new Scanner(source, path, reporter);
-    var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens, reporter);
-    var stmts = parser.parse();
-    var interpreter = new Interpreter(loader, reporter);
+    var reporter = new DefaultErrorReporter();
+    var compiler = new Compiler(loader, reporter);
+    var stmts = compiler.parseFile(path);
+    var interpreter = new Interpreter(compiler, reporter);
     var resolver = new Resolver(interpreter);
 
     resolver.resolve(stmts);
     if (hadError) return;
     interpreter.interpret(stmts);
+
+    // TEST
+    Sys.println('');
+    Sys.println('----');
+    Sys.println('TEST - DEFINED TYPES:');
+    for (key in compiler.types.keys()) {
+      trace(key);
+    }
+    // TEST
+    trace(compiler.types.get('test.core.ReflectTest'));
+    trace(compiler.types.get('test.core.ReflectTest').superclass.t.get());
   }
 
 }

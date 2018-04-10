@@ -11,6 +11,7 @@ enum TokenType {
   TokLeftBracket;
   TokRightBracket;
   TokPipe;
+  TokArrow;
   TokComma;
   TokDot;
   TokMinus;
@@ -23,6 +24,7 @@ enum TokenType {
   TokBoolAnd;
   TokAnd;
   TokBoolOr;
+  TokQuestion;
 
   // Keywords
   TokClass;

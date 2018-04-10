@@ -6,7 +6,7 @@ module std.test for
 
 class Runner {
 
-  init() {
+  new() {
     this.result = Result()
     this.cases = []
   }
@@ -20,7 +20,7 @@ class Runner {
     System.print(value)
   }
 
-  run() {
+  run():Bool {
     this.result = Result()
     for (var i = 0; i < this.cases.length(); i = i + 1) {
       var case = this.cases[i]
@@ -30,7 +30,7 @@ class Runner {
     return this.result.wasSuccessful()
   }
 
-  runCase(c) {
+  runCase(c:Case) {
     var className = Reflect.getType(c)
     var methods = Reflect.getMethodNames(c)
     var before = this.getBeforeMethods(c)
@@ -42,7 +42,7 @@ class Runner {
       var methodName = methods[i]
       var method = Reflect.getMethod(c, methodName)
       var testInfo = Reflect.getMetadata(method, 'test')
-      
+
       if (testInfo != null) {
 
         var label = '';
@@ -81,15 +81,15 @@ class Runner {
     this.print('\n')
   }
 
-  getBeforeMethods(c) {
+  getBeforeMethods(c:Case) {
     return this.getMarkedMethods(c, 'before')
   }
 
-  getAfterMethods(c) {
+  getAfterMethods(c:Case) {
     return this.getMarkedMethods(c, 'after')
   }
 
-  getMarkedMethods(c, name) {
+  getMarkedMethods(c:Case, name:String) {
     var marked = [];
     Reflect.getMethodNames(c).forEach(fun (methodName) {
       var method = Reflect.getMethod(c, methodName)
@@ -105,7 +105,7 @@ class Runner {
 
 class Result {
 
-  init() {
+  new() {
     this.tests = []
     this.failures = 0
     this.success = true
@@ -150,7 +150,7 @@ class Result {
 
 class Status {
 
-  init(className, methodName) {
+  new(className, methodName) {
     this.className = className
     this.methodName = methodName
     this.success = false
@@ -170,7 +170,7 @@ class Status {
 
 class Case {
 
-  init() {
+  new() {
     this.currentTest = Status()
   }
 

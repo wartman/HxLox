@@ -1,7 +1,9 @@
 package quirk.interpreter;
 
+import Type;
 import sys.io.File;
 import quirk.Expr;
+import quirk.Type as QuirkType;
 import quirk.TokenType;
 import quirk.ExprVisitor;
 import quirk.StmtVisitor;
@@ -9,8 +11,7 @@ import quirk.Scanner;
 import quirk.Parser;
 import quirk.ErrorReporter;
 import quirk.DefaultErrorReporter;
-import quirk.ModuleLoader;
-import quirk.DefaultModuleLoader;
+import quirk.Compiler;
 
 using haxe.io.Path;
 
@@ -20,27 +21,22 @@ class Interpreter
 {
 
   public var globals:Environment = new Environment();
-  public var currentModule:Module;
   public var reporter:ErrorReporter;
+  public var compiler:Compiler;
   private var environment:Environment;
   private var modules:Map<String, Module> = new Map();
-  private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
   private var objectMappings:Map<String, String> = [
     'String' => 'String'
   ];
 
-  public function new(?loader:ModuleLoader, ?reporter:ErrorReporter) {
-    if (loader == null) {
-      loader = new DefaultModuleLoader(Sys.getCwd());
-    }
+  public function new(compiler:Compiler, ?reporter:ErrorReporter) {
     if (reporter == null) {
       reporter = new DefaultErrorReporter();
     }
-    this.loader = loader;
+    this.compiler = compiler;
     this.reporter = reporter;
     environment = globals;
-    currentModule = new Module('root', globals, []);
 
     // Setup default types
     quirk.interpreter.foreign.CoreTypes.addCoreTypes(this);
@@ -52,8 +48,6 @@ class Interpreter
         execute(stmt);
       }
     } catch (error:RuntimeError) {
-      // Sys.println('In ' + currentModule.toString());
-      // HxLox.runtimeError(error);
       reporter.report(error.token.pos, error.token.lexeme, error.message);
     }
   }
@@ -173,13 +167,12 @@ class Interpreter
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):Dynamic {
-    var path = loader.find(stmt.path);
+    var path = compiler.loader.find(stmt.path);
     var name = stmt.path.map(function (p) return p.lexeme).join('.');
     var exports = stmt.exports.map(function (e) return e.lexeme);
     var module = new Module(name, environment, exports);
 
     modules.set(path, module);
-    currentModule = module;
 
     return null;
   }
@@ -522,9 +515,9 @@ class Interpreter
   }
 
   private function getModule(tokens:Array<Token>) {
-    var path:String = loader.find(tokens);
+    var path:String = compiler.loader.find(tokens);
     if (!modules.exists(path)) {
-      loadModule(path);
+      loadModule(tokens);
     }
     if (!modules.exists(path)) {
       var name = tokens.map(function (t) return t.lexeme).join('.');
@@ -533,15 +526,10 @@ class Interpreter
     return modules.get(path);
   }
 
-  private function loadModule(path:String) {
-    var source = loader.load(path);
+  private function loadModule(path:Array<Token>) {
     var previousEnv = environment;
-    var previousModule = currentModule;
 
-    var scanner = new Scanner(source, path, reporter);
-    var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens, reporter);
-    var stmts = parser.parse();
+    var stmts = compiler.parse(path);
     var resolver = new Resolver(this);
 
     resolver.resolve(stmts);
@@ -549,7 +537,6 @@ class Interpreter
     interpret(stmts);
 
     environment = previousEnv;
-    currentModule = previousModule;
   }
 
 }

@@ -34,7 +34,8 @@ class Function implements Callable {
   public function call(interpreter:Interpreter, args:Array<Dynamic>):Dynamic {
     var environment = new Environment(closure);
     for (i in 0...declaration.params.length) {
-      environment.define(declaration.params[i].lexeme, args[i]);
+      // todo: handle argument defaults
+      environment.define(declaration.params[i].name.lexeme, args[i]);
     }
     try {
       interpreter.executeBlock(declaration.body, environment);

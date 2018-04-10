@@ -2,6 +2,7 @@ package quirk;
 
 import quirk.Expr;
 import quirk.Stmt;
+import quirk.Type;
 import quirk.TokenType;
 
 class Parser {
@@ -9,10 +10,14 @@ class Parser {
   private var tokens:Array<Token>;
   private var current:Int = 0;
   private var reporter:ErrorReporter;
+  private var compiler:Compiler;
+  private var localModule:Array<Token> = [];
+  private var typeAliases:Map<String, Array<Token>> = new Map();
 
-  public function new(tokens:Array<Token>, reporter:ErrorReporter) {
+  public function new(tokens:Array<Token>, reporter:ErrorReporter, compiler:Compiler) {
     this.tokens = tokens;
     this.reporter = reporter;
+    this.compiler = compiler;
   }
 
   public function parse():Array<Stmt> {
@@ -41,19 +46,28 @@ class Parser {
 
   private function varDeclaration(?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
+
     var name:Token = consume(TokIdentifier, "Expect variable name.");
+    var type:Type = null;
     var initializer:Expr = null;
+
+    if (match([ TokColon ])) {
+      type = parseType();
+    }
+
     if (match([ TokEqual ])) {
       initializer = expression();
     }
+
     expectEndOfStatement();
     // consume(TokSemicolon, "Expect ';' after value.");
-    return new Stmt.Var(name, initializer, meta);
+    return new Stmt.Var(name, initializer, meta, type);
   }
 
   private function functionDeclaration(kind:String, ?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name:Token;
+
     if (kind != 'lambda' || check(TokIdentifier)) {
       name = consume(TokIdentifier, 'Expect ${kind} name.');
     } else {
@@ -61,33 +75,95 @@ class Parser {
     }
 
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
-    var params:Array<Token> = [];
+
+    var params:Array<{
+      name: Token,
+      ?type: Type,
+      ?value: Expr
+    }> = [];
+    var ret:Type = null;
+
     if (!check(TokRightParen)) {
       do {
+        ignoreNewlines();
         if (params.length >= 8) {
           error(peek(), "Cannot have more than 8 parameters.");
         }
 
-        params.push(consume(TokIdentifier, 'Expect parameter name'));
+        var name = consume(TokIdentifier, 'Expect parameter name');
+        var type:Type = null;
+        var value:Expr = null;
+
+        if (match([ TokColon ])) {
+          type = parseType();
+        }
+        if (match([ TokEqual ])) {
+          value = expression();
+        }
+
+        params.push({
+          name: name,
+          type: type,
+          value: value
+        });
       } while(match([ TokComma ]));
+      ignoreNewlines();
     }
     consume(TokRightParen, 'Expect \')\' after parameters');
+
+    if (match([ TokColon ])) {
+      ret = parseType();
+    }
+
     consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
     var body:Array<Stmt> = block();
 
     ignoreNewlines();
 
-    return new Stmt.Fun(name, params, body, meta);
+    return new Stmt.Fun(name, params, ret, body, meta);
   }
 
   private function classDeclaration(?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name = consume(TokIdentifier, "Expect a class name.");
     var superclass:Expr = null;
+    var type:ClassType = {
+      module: localModule.map(function (p) return p.lexeme),
+      name: name.lexeme,
+      superclass: null,
+      interfaces: [],
+      staticFields: [],
+      fields: [],
+      params: [],
+      pos: previous().pos
+    };
+
+    typeAliases.set(name.lexeme, localModule.concat([ name ]));
+
+    if (match([ TokLess ])) {
+      type.params = parseList(TokComma, function ():TypeParam {
+        var name = consume(TokIdentifier, "Expect a name");
+        var constraint:Type = null;
+        if (match([ TokColon ])) {
+          constraint = parseType();
+        }
+        return {
+          name: name.lexeme,
+          type: constraint
+        };
+      });
+      consume(TokGreater, "Expect '>' after parameter list");
+    }
 
     if (match([ TokColon ])) {
       consume(TokIdentifier, "Expect superclass name.");
       superclass = new Expr.Variable(previous());
+      // todo: throw error if not found.
+      var superclassPath = typeAliases.get(previous().lexeme);
+      type.superclass = {
+        t: getClassRef(superclassPath),
+        params: [] // todo
+      };
     }
 
     consume(TokLeftBrace, "Expect '{' before class body.");
@@ -98,6 +174,7 @@ class Parser {
     while(!check(TokRightBrace) && !isAtEnd()) {
       ignoreNewlines();
       var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
+      // todo: how to handle function types? add them to the class?
       if (match([ TokStatic ])) {
         staticMethods.push(cast functionDeclaration('method', funMeta));
       } else {
@@ -107,6 +184,9 @@ class Parser {
     ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after class body.");
     ignoreNewlines();
+
+    var fullName = type.module.concat([ type.name ]).join('.');
+    compiler.addType(fullName, type);
 
     return new Stmt.Class(name, superclass, methods, staticMethods, meta);
   }
@@ -121,10 +201,13 @@ class Parser {
 
     if (match([ TokAs ])) {
       ignoreNewlines();
+      // how to handle with type aliases??
       alias = consume(TokIdentifier, "Expect an identifier after `as`");
     } else if (match([ TokFor ])) {
       items = parseList(TokComma, function () {
-        return consume(TokIdentifier, "Expect an identifier");
+        var name = consume(TokIdentifier, "Expect an identifier");
+        typeAliases.set(name.lexeme, path.concat([ name ]));
+        return name;
       });
     } else {
       error(previous(), "Expect a 'for' or an 'as' after an import path");
@@ -143,6 +226,8 @@ class Parser {
     var items:Array<Token> = parseList(TokComma, function () {
       return consume(TokIdentifier, "Expect an identifier");
     });
+
+    localModule = path;
 
     // if (check(TokLeftBrace)) {
     //   // inline module stuff here
@@ -561,18 +646,18 @@ class Parser {
     return false;
   }
 
-  private function matchSequence(types:Array<TokenType>):Bool {
-    for (type in types) {
-      if (!check(type)) {
-        return false;
-      }
-    }
-    // Only advance if all checks passed
-    for (_ in types) {
-      advance();
-    }
-    return true;
-  }
+  // private function matchSequence(types:Array<TokenType>):Bool {
+  //   for (type in types) {
+  //     if (!check(type)) {
+  //       return false;
+  //     }
+  //   }
+  //   // Only advance if all checks passed
+  //   for (_ in types) {
+  //     advance();
+  //   }
+  //   return true;
+  // }
 
   private function consume(type:TokenType, message:String) {
     if (check(type)) return advance();
@@ -636,6 +721,58 @@ class Parser {
       items.push(parser());
     } while (match([ sep ]) && !isAtEnd());
     return items;
+  }
+
+  private function parseType():Type {
+    if (match([ TokLeftParen ])) {
+      return parseFunType();
+    }
+    return parseTypeInst();
+  }
+
+  private function parseTypeInst():Type {
+    var path:Array<Token> = parseList(TokDot, function () {
+      return consume(TokIdentifier, 'Expect an identifier');
+    });
+    var params:Array<Type> = [];
+    if (match([ TokLess ])) {
+      params = parseList(TokComma, parseType);
+      consume(TokGreater, "Expect '>' at the end of type param list");
+    }
+    var cls = getClassRef(path);
+    return TInst(cls, params);
+  }
+
+  private function parseFunType():Type {
+    var args:Array<Type.Argument> = parseList(TokComma, function () {
+      var optional:Bool = false;
+      if (match([ TokQuestion ])) {
+        optional = true;
+      }
+      var name = consume(TokIdentifier, "Expect an identifier");
+      var type:Type = null;
+      if (match([ TokColon ])) {
+        type = parseType();
+      }
+      return {
+        name: name.lexeme,
+        type: type,
+        optional: optional
+      };
+    });
+    ignoreNewlines();
+    consume(TokRightParen, 'Expect an ending paren');
+    consume(TokArrow, 'Expect an arrow');
+    var ret:Type = parseType();
+    return TFun(args, ret);
+  }
+
+  private function getClassRef(path:Array<Token>):Ref<ClassType> {
+    return {
+      get: function () {
+        return compiler.getType(path);
+      }
+    };
   }
 
   private function expectEndOfStatement() {

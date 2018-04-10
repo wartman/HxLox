@@ -28,9 +28,6 @@ class CoreTypes {
       Sys.println(Std.string(args[0]));
       return null;
     }, 1));
-    globals.define('__SYSTEM_GET_MODULE', new ExternCallable(function (args) {
-      return interpreter.currentModule;
-    }, 0));
     globals.define('__SYSTEM_GET_CWD', new ExternCallable(function (args) {
       return Sys.getCwd();
     }, 0));
@@ -164,7 +161,7 @@ class CoreTypes {
     var source = haxe.Resource.getString('primitives');
     var scanner = new Scanner(source, '<primitives>', reporter);
     var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens, reporter);
+    var parser = new Parser(tokens, reporter, interpreter.compiler);
     var stmts = parser.parse();
     var resolver = new Resolver(interpreter);
 

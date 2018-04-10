@@ -6,7 +6,7 @@ class ArrayTest : Case {
 
   @test('Ensure push works')
   testPush() {
-    var arr = [ 1, 2, 3 ]
+    var arr:Array<Int> = [ 1, 2, 3 ]
     arr.push(4)
     this.assertEquals(arr.length(), 4)
     this.assertEquals(arr[3], 4)
@@ -14,7 +14,7 @@ class ArrayTest : Case {
 
   @test('Subscript operator works')
   testSubscript() {
-    var arr = [ 1, 2 ]
+    var arr:Array<Int> = [ 1, 2 ]
     arr[1] = 3
     this.assertEquals(arr[1], 3)
   }

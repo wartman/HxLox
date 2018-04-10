@@ -9,7 +9,7 @@ class DefaultErrorReporter implements ErrorReporter {
   public function report(pos:Position, where:String, message:String, ?isRuntime:Bool) {
     Quirk.hadError = true;
     if (isRuntime == true) Quirk.hadRuntimeError = true;
-    Sys.println('${pos.file} [line ${pos.line}] Error ${where}:');
+    Sys.println('${pos.file} [line ${pos.line}] Error at [${where}]:');
     Sys.println('   ${message}');
   }
 

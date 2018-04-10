@@ -68,12 +68,13 @@ class Scanner {
       case '&': addToken(match('&') ? TokBoolAnd : TokAnd);
       case ',': addToken(TokComma);
       case '.': addToken(TokDot);
-      case '-': addToken(TokMinus);
+      case '-': addToken(match('>') ? TokArrow : TokMinus);
       case '+': addToken(TokPlus);
       case ';': addToken(TokSemicolon);
       case ':': addToken(TokColon);
       case '*': addToken(TokStar);
       case '@': addToken(TokAt);
+      case '?': addToken(TokQuestion);
       case '!': addToken(match('=') ? TokBangEqual : TokBang);
       case '=': addToken(match('=') ? TokEqualEqual : TokEqual);
       case '<': addToken(match('=') ? TokLessEqual : TokLess);

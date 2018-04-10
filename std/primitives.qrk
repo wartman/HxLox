@@ -57,23 +57,24 @@ class Reflect {
 
 class Exception {
 
-  init(message) {
+  new(message) {
     this.message = message
   }
 
 }
 
+// class Array<T> {
 class Array {
 
-  init(values) {
+  new(values) {
     this.values = values
   }
 
-  __offsetGet(i) {
+  __offsetGet(i:Int) {
     return __ARRAY_GET(this.values, i)
   }
 
-  __offsetSet(i, value) {
+  __offsetSet(i:Int, value) {
     __ARRAY_SET(this.values, i, value)
   }
 
@@ -104,7 +105,7 @@ class Array {
     }
   }
 
-  join(glue) {
+  join(glue:String) {
     return __ARRAY_JOIN(this.values, glue)
   }
 
@@ -120,7 +121,7 @@ class Object {
 
 class String {
 
-  init(value) {
+  new(value) {
     this.value = value
   }
 
