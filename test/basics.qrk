@@ -1,4 +1,4 @@
-module test.basics for ArrayTest, ObjectTest, StringTest
+module test.basics for ArrayTest, ObjectTest, StringTest, LambdaTest
 
 import std.test for Case
 
@@ -32,9 +32,18 @@ class ArrayTest : Case {
   @test('Map works')
   testMap() {
     var arr = [ 1, 2, 3 ]
-    var changed = arr.map(fun (value, index) {
+    var changed = arr.map({ | value, index |
       return value + 1
-    });
+    })
+    this.assertEquals(changed[0], 2)
+    this.assertEquals(changed[1], 3)
+    this.assertEquals(changed[2], 4)
+  }
+
+  @test('Map works with shorter lambda')
+  testMapShort() {
+    var arr = [ 1, 2, 3 ]
+    var changed = arr.map({ return it + 1 })
     this.assertEquals(changed[0], 2)
     this.assertEquals(changed[1], 3)
     this.assertEquals(changed[2], 4)
@@ -92,6 +101,34 @@ class StringTest : Case {
     var arr = 'a,b'.split(',')
     this.assertTrue(Reflect.getType(arr) == 'Array')
     this.assertEquals(arr.length(), 2)
+  }
+
+}
+
+class LambdaTest : Case {
+  
+  @test('Short declaration with no args')
+  testShortNoArgs() {
+    var test = { return 'a' }
+    this.assertEquals(test(), 'a')
+  }
+
+  @test('Short declaration works')
+  testShort() {
+    var test = { |a| return a }
+    this.assertEquals(test('a'), 'a') 
+  }
+
+  @test('Automatic single argument (`it`)')
+  testIt() {
+    var test = { return it }
+    this.assertEquals(test('a'), 'a')
+  }
+
+  @test('Longer version')
+  testLonger() {
+    var test = fun (a) { return a }
+    this.assertEquals(test('a'), 'a')
   }
 
 }

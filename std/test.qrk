@@ -51,7 +51,7 @@ class Runner {
         }
 
         c.currentTest = Status(className, methodName)
-        before.forEach(fun (m) { m(); })
+        before.forEach({ it() })
 
         try {
           method()
@@ -72,9 +72,8 @@ class Runner {
             '\n' + label
         }
 
-        after.forEach(fun (a) { a(); })
+        after.forEach({ it() })
         this.result.add(c.currentTest)
-
       }
     }
 
@@ -91,7 +90,7 @@ class Runner {
 
   getMarkedMethods(c, name) {
     var marked = [];
-    Reflect.getMethodNames(c).forEach(fun (methodName) {
+    Reflect.getMethodNames(c).forEach({ | methodName |
       var method = Reflect.getMethod(c, methodName)
       var meta = Reflect.getMetadata(method, name)
       if (meta != null) {

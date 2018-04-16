@@ -56,7 +56,9 @@ enum TokenType {
   TokGreaterEqual;
   TokLess;
   TokLessEqual;
+  TokRange; // ..
 
+  // Other
   TokIdentifier;
   TokString;
   TokNumber;

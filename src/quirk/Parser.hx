@@ -51,7 +51,7 @@ class Parser {
     return new Stmt.Var(name, initializer, meta);
   }
 
-  private function functionDeclaration(kind:String, ?meta:Array<Expr>):Stmt {
+  private function functionDef(kind:String, ?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name:Token;
     if (kind != 'lambda' || check(TokIdentifier)) {
@@ -73,11 +73,16 @@ class Parser {
     }
     consume(TokRightParen, 'Expect \')\' after parameters');
     consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
+
     var body:Array<Stmt> = block();
-
-    ignoreNewlines();
-
+    
     return new Stmt.Fun(name, params, body, meta);
+  }
+
+  private function functionDeclaration(kind:String, ?meta:Array<Expr>):Stmt {
+    var def = functionDef(kind, meta);
+    ignoreNewlines();
+    return def;
   }
 
   private function classDeclaration(?meta:Array<Expr>):Stmt {
@@ -160,7 +165,7 @@ class Parser {
     if (match([ TokReturn ])) return returnStatement();
     if (match([ TokThrow ])) return throwStatement();
     if (match([ TokTry ])) return tryStatement();
-    if (match([ TokLeftBrace ])) return new Stmt.Block(block());
+    if (match([ TokLeftBrace ])) return blockStatement();
     return expressionStatement();
   }
 
@@ -188,11 +193,21 @@ class Parser {
   }
 
   private function forStatement():Stmt {
+    // consume(TokLeftParen, "Expect '(' after 'for'.");
+    // var binding = consume(TokIdentifier, "Expect an identifier.");
+    // ignoreNewlines();
+    // consume(TokIn, "Expect 'in' after variable binding");
+    // ignoreNewlines();
+    // var iterator = expression();
+    // consume(TokRightParen, "Expect ')' at the end of the `for` initializer.");
+    // var body = statement();
+    // return new Stmt.For(binding, iterator, body);
+
     // TODO:
     // Replace with `for (_ in _)`
-
+    
     consume(TokLeftParen, "Expect '(' after 'for'.");
-
+    
     var initializer:Stmt;
     if (match([ TokSemicolon ])) {
       initializer = null;
@@ -201,42 +216,42 @@ class Parser {
     } else {
       initializer = expressionStatement();
     }
-
+    
     var condition:Expr = null;
     if (!check(TokSemicolon)) {
       condition = expression();
     }
     consume(TokSemicolon, "Expect ';' after loop condition.");
     ignoreNewlines();
-
+    
     var increment:Expr = null;
     if (!check(TokRightParen)) {
       increment = expression();
     }
     consume(TokRightParen, "Expect ')' after loop condition.");
     ignoreNewlines();
-
+    
     var body = statement();
-
+    
     if (increment != null) {
       body = new Stmt.Block([
         body,
         new Stmt.Expression(increment)
       ]);
     }
-
+    
     if (condition == null) {
       condition = new Expr.Literal(true);
     }
     body = new Stmt.While(condition, body);
-
+    
     if (initializer != null) {
       body = new Stmt.Block([
         initializer,
         body
       ]);
     }
-
+    
     return body;
   }
 
@@ -267,7 +282,7 @@ class Parser {
     consume(TokLeftBrace, "Expect '{' after 'try'");
     ignoreNewlines();
 
-    var body = new Stmt.Block(block());
+    var body = blockStatement();
 
     ignoreNewlines();
     consume(TokCatch, "Expect 'catch' after try block");
@@ -277,7 +292,7 @@ class Parser {
     consume(TokLeftBrace, "Expect { after 'catch'");
 
     ignoreNewlines();
-    var caught = new Stmt.Block(block());
+    var caught = blockStatement();
     return new Stmt.Try(body, caught, exception);
   }
 
@@ -289,8 +304,14 @@ class Parser {
     }
     ignoreNewlines();
     consume(TokRightBrace, "Expect '}' after block.");
-    ignoreNewlines();
+    // ignoreNewlines();
     return statements;
+  }
+
+  private function blockStatement() {
+    var statements = block();
+    ignoreNewlines();
+    return new Stmt.Block(statements);
   }
 
   private function expression() {
@@ -493,11 +514,11 @@ class Parser {
     }
 
     if (match([ TokLeftBrace ])) {
-      return blockOrObjectLiteral();
+      return objectOrLambda();
     }
 
     if (match([ TokFun ])) {
-      return new Expr.Lambda(functionDeclaration('lambda'));
+      return new Expr.Lambda(functionDef('lambda'));
     }
 
     throw error(peek(), 'Expect expression');
@@ -513,8 +534,45 @@ class Parser {
     return new Expr.ArrayLiteral(end, values);
   }
 
-  private function blockOrObjectLiteral():Expr {
-    // For now, always assume object literal.
+  private function objectOrLambda():Expr {
+    ignoreNewlines();
+    if (check(TokIdentifier) && checkNext(TokColon)) {
+      return objectLiteral();
+    }
+    if (check(TokRightBrace)) {
+      return objectLiteral();
+    }
+    return shortLambda();
+  }
+
+  private function shortLambda() {
+    ignoreNewlines();
+    var params:Array<Token> = [];
+    if (match([ TokPipe ])) {
+      if (!check(TokPipe)) {
+        do {
+          if (params.length >= 8) {
+            error(peek(), "Cannot have more than 8 parameters.");
+          }
+          params.push(consume(TokIdentifier, 'Expect parameter name'));
+        } while(match([ TokComma ]));
+      }
+      consume(TokPipe, 'Expect \'|\' after parameters');
+    } else {
+      params = [
+        new Token(TokIdentifier, 'it', null, previous().pos)
+      ];
+    }
+    var body:Array<Stmt> = block();
+    return new Expr.Lambda(new Stmt.Fun(
+      new Token(TokIdentifier, '<annonymous>', null, previous().pos),
+      params,
+      body,
+      []
+    ));
+  }
+
+  private function objectLiteral():Expr {
     var keys:Array<Token> = [];
     var values:Array<Expr> = [];
 
@@ -639,6 +697,11 @@ class Parser {
   }
 
   private function expectEndOfStatement() {
+    if (check(TokRightBrace)) {
+      // special case -- allows stuff like '{ |a| a }'
+      // We don't consume it here, as the parser needs to check for it.
+      return true;
+    }
     if (match([ TokNewline ])) {
       ignoreNewlines(); // consume any extras
       return true;

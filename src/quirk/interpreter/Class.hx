@@ -29,6 +29,8 @@ class Class extends Instance implements Callable {
     return initializer.arity();
   }
 
+  public function isDynamic():Bool return false;
+
   public function call(interpreter:Interpreter, args:Array<Dynamic>):Dynamic {
     var instance = new Instance(this);
     var initializer = methods.get('init');

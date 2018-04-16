@@ -67,7 +67,7 @@ class Scanner {
       case '|': addToken(match('|') ? TokBoolOr : TokPipe);
       case '&': addToken(match('&') ? TokBoolAnd : TokAnd);
       case ',': addToken(TokComma);
-      case '.': addToken(TokDot);
+      case '.': addToken(match('.') ? TokRange : TokDot);
       case '-': addToken(TokMinus);
       case '+': addToken(TokPlus);
       case ';': addToken(TokSemicolon);

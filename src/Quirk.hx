@@ -9,6 +9,7 @@ import quirk.DefaultModuleLoader;
 import quirk.interpreter.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
+import quirk.generator.JsGenerator;
 
 using haxe.io.Path;
 
@@ -20,12 +21,30 @@ class Quirk {
   public static function main() {
     var args = Sys.args();
     if (args.length > 1) {
+      if (args[0] == 'gen') {
+        genFile(args[1]);
+        return;
+      }
       Sys.print('Usage: quirk [script]');
     } else if (args.length == 1) {
       runFile(args[0]);
     } else {
       runPrompt();
     }
+  }
+
+  private static function genFile(path:String) {
+    var reporter = new DefaultErrorReporter();
+    var loader = new DefaultModuleLoader(Sys.getCwd());
+    var source = loader.load(path);
+    var scanner = new Scanner(source, path, reporter);
+    var tokens = scanner.scanTokens();
+    var parser = new Parser(tokens, reporter);
+    var stmts = parser.parse();
+    var generator = new JsGenerator(loader, reporter);
+    var js = generator.generate(stmts);
+
+    trace(js);
   }
 
   private static function runFile(path:String) {

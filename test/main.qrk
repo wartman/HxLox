@@ -11,6 +11,7 @@ fun main() {
     add(basics.ArrayTest()).
     add(basics.ObjectTest()).
     add(basics.StringTest()).
+    add(basics.LambdaTest()).
     add(core.ReflectTest())
 
   runner.run()

@@ -44,6 +44,12 @@ class While implements Stmt {
   var body:Stmt;
 }
 
+// class For implements Stmt {
+//   var binding:Token;
+//   var iterator:Expr;
+//   var body:Stmt;
+// }
+
 class Block implements Stmt {
   var statements:Array<Stmt>;
 }

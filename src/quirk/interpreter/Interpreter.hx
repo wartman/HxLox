@@ -104,7 +104,7 @@ class Interpreter
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):Dynamic {
-    var fun:Function = new Function(cast expr.fun, environment, false, new Map());
+    var fun:Function = new Function(cast expr.fun, environment, false, new Map(), true);
     return fun;
   }
 
@@ -384,7 +384,7 @@ class Interpreter
 
     var callable:Callable = cast callee;
 
-    if (arguments.length != callable.arity()) {
+    if (!callable.isDynamic() && (arguments.length != callable.arity())) {
       throw new RuntimeError(expr.paren, 'Expected ${callable.arity()} arguments but got ${arguments.length}.');
     }
 

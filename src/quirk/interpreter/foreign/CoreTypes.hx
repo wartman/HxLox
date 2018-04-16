@@ -188,6 +188,8 @@ class ExternCallable implements Callable {
     return fn(arguments);
   }
 
+  public function isDynamic() return false;
+
   public function arity():Int {
     return this.arity_;
   }
