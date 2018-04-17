@@ -1,6 +1,6 @@
 -main Quirk
 -cp src
 
--resource std/primitives.qrk@primitives
+-resource std/Primitives.qrk@primitives
 
 -neko bin/quirk.n

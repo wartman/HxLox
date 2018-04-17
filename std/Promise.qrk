@@ -1,0 +1,14 @@
+module Std.Promise for Promise, reject, resolve
+
+class Promise {
+  
+  @php
+  new(resolver) {
+    this.resolver = resolver
+  }
+
+  @php
+  then(cb) {
+  }
+
+}

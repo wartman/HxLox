@@ -1,18 +1,18 @@
-module test.main for main
+module Test.Main for main
 
-import std.test for Runner
-import test.basics as basics
-import test.core as core
+import Std.Test for Runner
+import Test.Basics as Basics
+import Test.Core as Core
 
 fun main() {
   var runner = Runner()
 
   runner.
-    add(basics.ArrayTest()).
-    add(basics.ObjectTest()).
-    add(basics.StringTest()).
-    add(basics.LambdaTest()).
-    add(core.ReflectTest())
+    add(Basics.ArrayTest()).
+    add(Basics.ObjectTest()).
+    add(Basics.StringTest()).
+    add(Basics.LambdaTest()).
+    add(Core.ReflectTest())
 
   runner.run()
 }

@@ -1,6 +1,6 @@
-module test.core for ReflectTest
+module Test.Core for ReflectTest
 
-import std.test for Case
+import Std.Test for Case
 
 class ReflectTest : Case {
 

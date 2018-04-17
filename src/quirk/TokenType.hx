@@ -63,5 +63,15 @@ enum TokenType {
   TokString;
   TokNumber;
 
+  // Interpolated strings, like `"foo ${bar}"`, are parsed
+  // as if they were written `"foo" + bar`. For example, the
+  // token stream for `"foo ${bar} bin"` would look like:
+  // 
+  //  TokInterpolation // -> "foo"
+  //  TokIdentifier // -> bar
+  //  TokString // -> "bin"
+  //
+  TokInterpolation;
+
   TokEof;
 }

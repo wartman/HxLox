@@ -473,6 +473,7 @@ class Parser {
       } while (match([ TokComma ]));
     }
 
+    ignoreNewlines();
     var paren = consume(TokRightParen, "Expect ')' after arguments.");
 
     return new Expr.Call(callee, paren, arguments);
@@ -483,7 +484,7 @@ class Parser {
     if (match([ TokTrue ])) return new Expr.Literal(true);
     if (match([ TokNull ])) return new Expr.Literal(null);
 
-    if (match([ TokNumber, TokString ])) {
+    if (match([ TokNumber, TokString, TokInterpolation ])) {
       return new Expr.Literal(previous().literal);
     }
 
@@ -535,6 +536,7 @@ class Parser {
   }
 
   private function objectOrLambda():Expr {
+    var isInline:Bool = !check(TokNewline);
     ignoreNewlines();
     if (check(TokIdentifier) && checkNext(TokColon)) {
       return objectLiteral();
@@ -542,10 +544,10 @@ class Parser {
     if (check(TokRightBrace)) {
       return objectLiteral();
     }
-    return shortLambda();
+    return shortLambda(isInline);
   }
 
-  private function shortLambda() {
+  private function shortLambda(isInline:Bool = false) {
     ignoreNewlines();
     var params:Array<Token> = [];
     if (match([ TokPipe ])) {
@@ -558,12 +560,23 @@ class Parser {
         } while(match([ TokComma ]));
       }
       consume(TokPipe, 'Expect \'|\' after parameters');
+      isInline = !check(TokNewline);
     } else {
       params = [
         new Token(TokIdentifier, 'it', null, previous().pos)
       ];
     }
-    var body:Array<Stmt> = block();
+
+    var body:Array<Stmt> = [];
+    if (isInline && !check(TokReturn)) {
+      // Treat the next expression as a return.
+      body.push(new Stmt.Return(peek(), expression()));
+      ignoreNewlines();
+      consume(TokRightBrace, 'Inline lambdas must contain only one expression.');
+    } else {
+      body = block();
+    }
+
     return new Expr.Lambda(new Stmt.Fun(
       new Token(TokIdentifier, '<annonymous>', null, previous().pos),
       params,

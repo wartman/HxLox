@@ -141,3 +141,14 @@ class String {
   }
 
 }
+
+class RegEx {
+  
+  new(pattern, flags) {
+    this.pattern = pattern
+    this.flags = flags
+  }
+
+  // todo
+
+}

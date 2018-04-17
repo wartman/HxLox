@@ -129,10 +129,18 @@ class Scanner {
     addToken(TokNewline);
   }
 
-  private function string(quote:String = '"') {
+  private function string(quote:String = '"', depth:Int = 0) {
     while (peek() != quote && !isAtEnd()) {
       if (peek() == '\n') {
         line++;
+      }
+      if (peek() == '$' && peekNext() == '{') {
+        addToken(TokInterpolation, source.substring(start + 1, current));
+        // consume `${`
+        advance();
+        advance();
+        interpolatedString(quote, depth);
+        return;
       }
       advance();
     }
@@ -153,9 +161,31 @@ class Scanner {
     addToken(TokString, value);
   }
 
+  private function interpolatedString(quote:String = '"', depth:Int) {
+    depth = depth + 1;
+    addToken(TokPlus, null);
+    addToken(TokLeftParen, '(');
+    if (depth > 6) {
+      reporter.report({
+        line: line,
+        offset: current,
+        file: file
+      }, '', 'Interpolation too deep: only 5 levels allowed');
+    }
+    while (peek() != '}' && !isAtEnd()) {
+      start = current;
+      scanToken();
+    }
+    start = current;
+    addToken(TokRightParen, ')');
+    addToken(TokPlus, null);
+    // Continue parsing.
+    string(quote, depth);
+  }
+
   private function number() {
     while(isDigit(peek())) advance();
-    if (peek() == '.' && isDigit(peekAt(current + 1))) {
+    if (peek() == '.' && isDigit(peekNext())) {
       advance();
       while (isDigit(peek())) advance();
     }
@@ -194,13 +224,12 @@ class Scanner {
     return source.charAt(current);
   }
 
-  private function peekAt(i) {
-    if (i >= source.length) {
+  private function peekNext():String {
+    if (isAtEnd()) {
       return '';
     }
-    return source.charAt(i);
+    return source.charAt(current + 1);
   }
-
   private function advance() {
     current++;
     return source.charAt(current - 1);

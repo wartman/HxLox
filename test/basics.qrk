@@ -1,6 +1,6 @@
-module test.basics for ArrayTest, ObjectTest, StringTest, LambdaTest
+module Test.Basics for ArrayTest, ObjectTest, StringTest, LambdaTest
 
-import std.test for Case
+import Std.Test for Case
 
 class ArrayTest : Case {
 
@@ -43,7 +43,7 @@ class ArrayTest : Case {
   @test('Map works with shorter lambda')
   testMapShort() {
     var arr = [ 1, 2, 3 ]
-    var changed = arr.map({ return it + 1 })
+    var changed = arr.map({ it + 1 })
     this.assertEquals(changed[0], 2)
     this.assertEquals(changed[1], 3)
     this.assertEquals(changed[2], 4)
@@ -103,31 +103,51 @@ class StringTest : Case {
     this.assertEquals(arr.length(), 2)
   }
 
+  @test('Interpolation')
+  testInterpolation() {
+    var ret = { it }
+    var foo = 'foo'
+    this.assertEquals(
+      'foo ${ foo } and ${ ret('bar') + 'bin' } and ok',
+      'foo foo and barbin and ok'
+    )
+  }
+
 }
 
 class LambdaTest : Case {
   
   @test('Short declaration with no args')
   testShortNoArgs() {
-    var test = { return 'a' }
+    var test = { 
+      return 'a' 
+    }
+    this.assertEquals(test(), 'a')
+  }
+
+  @test('Short declaration with single inline expression automatically returns')
+  testShortNoArgs() {
+    var test = { 'a' }
     this.assertEquals(test(), 'a')
   }
 
   @test('Short declaration works')
   testShort() {
-    var test = { |a| return a }
+    var test = { |a| a }
     this.assertEquals(test('a'), 'a') 
   }
 
   @test('Automatic single argument (`it`)')
   testIt() {
-    var test = { return it }
+    var test = { it }
     this.assertEquals(test('a'), 'a')
   }
 
   @test('Longer version')
   testLonger() {
-    var test = fun (a) { return a }
+    var test = fun (a) { 
+      return a
+    }
     this.assertEquals(test('a'), 'a')
   }
 

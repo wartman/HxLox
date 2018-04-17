@@ -1,4 +1,4 @@
-module std.test for
+module Std.Test for
   Runner,
   Result,
   Status,
