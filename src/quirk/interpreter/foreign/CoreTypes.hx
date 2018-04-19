@@ -51,6 +51,24 @@ class CoreTypes {
       }
       return '<object>';
     }, 1));
+    globals.define('__REFLECT_GET_SUPERCLASS', new ExternCallable(function (args) {
+      var target:Dynamic = args[0];
+      if (Std.is(target, String)) {
+        target = globals.values.get(target);
+        if (target == null) {
+          return null;
+        }
+      }
+      if (Std.is(target, Instance)) {
+        var inst:Instance = cast target;
+        return inst.getClass().superclass;
+      }
+      if (Std.is(target, Class)) {
+        var cls:Class = cast target;
+        return cls.superclass;
+      }
+      return null;
+    }, 1));
     globals.define('__REFLECT_GET_FIELD', new ExternCallable(function (args) {
       var obj:Instance = args[0];
       var name:String = Std.string(args[1]);

@@ -1,0 +1,66 @@
+class System {
+  
+  foreign static getCwd()
+
+  foreign static print(s)
+
+  static println(s) {
+    this.print(s + '\n')
+  }
+
+}
+
+class Std {
+
+  foreign static toString(s)
+  
+}
+
+class Reflect {
+  
+  foreign static getType(cls)
+
+  foreign static is(a, b)
+
+  foreign static getMethod(obj, name)
+
+  foreign static getMethodName(obj)
+
+  foreign static getField(cls, name)
+
+  foreign static getMetadata(target, name)
+
+}
+
+class String { 
+
+}
+
+class Array {
+  
+  foreign [index]
+
+  foreign [index] = value
+
+  foreign map(cb)
+
+  foreign join(glue)
+
+}
+
+class Map {
+
+  new() {
+    this.keys = []
+    this.values = []
+  }
+  
+  [key] {
+    return this.get(key)
+  }
+
+  [key] = (value) {
+    this.set(key, value)
+  }
+
+}

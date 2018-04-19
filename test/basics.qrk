@@ -32,9 +32,9 @@ class ArrayTest : Case {
   @test('Map works')
   testMap() {
     var arr = [ 1, 2, 3 ]
-    var changed = arr.map({ | value, index |
+    var changed = arr.map { | value, index |
       return value + 1
-    })
+    }
     this.assertEquals(changed[0], 2)
     this.assertEquals(changed[1], 3)
     this.assertEquals(changed[2], 4)
@@ -43,10 +43,17 @@ class ArrayTest : Case {
   @test('Map works with shorter lambda')
   testMapShort() {
     var arr = [ 1, 2, 3 ]
-    var changed = arr.map({ it + 1 })
+    var changed = arr.map { it + 1 }
     this.assertEquals(changed[0], 2)
     this.assertEquals(changed[1], 3)
     this.assertEquals(changed[2], 4)
+  }
+
+  @test('Reduce works')
+  testReduce() {
+    var arr = [ 1, 2, 3 ]
+    var reduced = arr.reduce({ | out, value | out + value }, 0)
+    this.assertEquals(reduced, 6)
   }
 
 }
@@ -103,15 +110,22 @@ class StringTest : Case {
     this.assertEquals(arr.length(), 2)
   }
 
-  @test('Interpolation')
+  @test('Simple interpolation')
   testInterpolation() {
-    var ret = { it }
     var foo = 'foo'
-    this.assertEquals(
-      'foo ${ foo } and ${ ret('bar') + 'bin' } and ok',
-      'foo foo and barbin and ok'
-    )
+    var bar = 'bar'
+    this.assertEquals('start ${ foo + 'ish' } | ${ bar } end', 'start fooish | bar end')
   }
+
+  //  @test('Tagged templates')
+  //  testTaggedTemplate() {
+  //    var tpl = { | parts, placeholders | parts.reduce({| result, part, i | 
+  //      return result + placeholders[i] + '|' + part  
+  //    }, '') }
+  //    var foo = 'foo'
+  //    var res = tpl'start ${ foo } end'
+  //    this.assertEquals(res, '|start foo| end')
+  //  }
 
 }
 
@@ -149,6 +163,14 @@ class LambdaTest : Case {
       return a
     }
     this.assertEquals(test('a'), 'a')
+  }
+
+  @test('Trailing arguments')
+  testTrailing() {
+    var tester = { |a, cb| cb(a) }
+    // Both should work the same:
+    this.assertEquals(tester('a', { it + 'b' }), 'ab')
+    this.assertEquals(tester('a') { it + 'b' }, 'ab')
   }
 
 }

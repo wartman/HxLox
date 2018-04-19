@@ -31,3 +31,20 @@ Notes
 Basically this branch has left Lox behind and is doing its own thing.
 
 Its own, poorly tested thing.
+
+Grammar
+-------
+
+(note: `;` also indicates a newline, not just a semicolon)
+
+```
+expression     → equality ;
+equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     → addition ( ( ">" | ">=" | "<" | "<=" ) addition )* ;
+addition       → multiplication ( ( "-" | "+" ) multiplication )* ;
+multiplication → unary ( ( "/" | "*" ) unary )* ;
+unary          → ( "!" | "-" ) unary
+               | primary ;
+primary        → NUMBER | STRING | "false" | "true" | "null"
+               | "(" expression ")" | ( interpolation )* ;
+```

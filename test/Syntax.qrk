@@ -1,0 +1,36 @@
+// NOTE
+// Currently does not work -- just notes for the next step.
+
+module Test.Syntax for MethodTest
+
+import Std.Test for Case
+
+class MethodTypes {
+  
+  // Static
+  static foo() { return 'foo' }
+
+  // Instance
+  fooBar(a) { return a + 'foo' }
+
+  // Getter
+  bar { return this.bar }
+
+  // Setter
+  bar = value { this.bar = value }
+
+  // Subscript
+  [key] { return this.values[key] }
+
+  // Subscript setter
+  [key] = value { this.values[key] = value }
+
+  init(values) {
+    this.values = values
+  }
+
+}
+
+class MethodTest : Case {
+  
+}

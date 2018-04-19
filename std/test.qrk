@@ -51,7 +51,7 @@ class Runner {
         }
 
         c.currentTest = Status(className, methodName)
-        before.forEach({ it() })
+        before.forEach { it() }
 
         try {
           method()
@@ -72,7 +72,7 @@ class Runner {
             '\n' + label
         }
 
-        after.forEach({ it() })
+        after.forEach { it() }
         this.result.add(c.currentTest)
       }
     }

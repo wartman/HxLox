@@ -3,6 +3,7 @@ module Test.Main for main
 import Std.Test for Runner
 import Test.Basics as Basics
 import Test.Core as Core
+// import Test.Syntax as Syntax
 
 fun main() {
   var runner = Runner()
@@ -12,6 +13,7 @@ fun main() {
     add(Basics.ObjectTest()).
     add(Basics.StringTest()).
     add(Basics.LambdaTest()).
+    // add(Syntax.MethodTest()).
     add(Core.ReflectTest())
 
   runner.run()

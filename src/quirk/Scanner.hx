@@ -81,7 +81,10 @@ class Scanner {
       case '/':
         if (match('/')) {
           while (peek() != '\n' && !isAtEnd()) advance();
-          if (peek() == '\n') advance(); // Consume the newline too.
+          if (peek() == '\n') {
+            line++;
+            advance(); // Consume the newline too.
+          }
         } else {
           addToken(TokSlash);
         }
@@ -150,7 +153,6 @@ class Scanner {
         offset: current,
         file: file
       }, '<EOF>', 'Unterminated string.');
-      // HxLox.error({ line: line }, 'Unterminated string.');
       return;
     }
 
@@ -163,8 +165,6 @@ class Scanner {
 
   private function interpolatedString(quote:String = '"', depth:Int) {
     depth = depth + 1;
-    addToken(TokPlus, null);
-    addToken(TokLeftParen, '(');
     if (depth > 6) {
       reporter.report({
         line: line,
@@ -177,8 +177,6 @@ class Scanner {
       scanToken();
     }
     start = current;
-    addToken(TokRightParen, ')');
-    addToken(TokPlus, null);
     // Continue parsing.
     string(quote, depth);
   }

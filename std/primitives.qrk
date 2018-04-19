@@ -33,8 +33,17 @@ class Reflect {
   }
 
   static is(a, b) {
-    // Todo: need to be able to check superclasses.
-    return this.getType(a) == this.getType(b)
+    var passing = this.getType(a) == this.getType(b)
+    if (passing != true) {
+      var superclass = this.getSuperclass(a)
+      if (superclass == null) return false
+      return this.is(superclass, b)
+    }
+    return passing
+  }
+
+  static getSuperclass(target) {
+    return __REFLECT_GET_SUPERCLASS(target)
   }
 
   static getMethod(obj, name) {
@@ -102,6 +111,14 @@ class Array {
     for (var i = 0; i < this.length(); i = i + 1) {
       cb(__ARRAY_GET(this.values, i))
     }
+  }
+
+  reduce(cb, initial) {
+    var out = initial
+    for (var i = 0; i < this.length(); i = i + 1) {
+      out = cb(out, __ARRAY_GET(this.values, i), i)
+    }
+    return out
   }
 
   join(glue) {

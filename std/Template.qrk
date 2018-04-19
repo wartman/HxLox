@@ -37,5 +37,5 @@ fun safe(value) {
 fun html(parts, placeholders) {
   return safe(parts.reduce({| result, part, i | 
     return result + escape(placeholders[i - 1]) + part
-  }))
+  }, ''))
 }

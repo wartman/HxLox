@@ -436,6 +436,8 @@ class Parser {
     while(true) {
       if (match([ TokLeftParen ])) {
         expr = finishCall(expr);
+      } else if (match([ TokLeftBrace ])) {
+        expr = new Expr.Call(expr, previous(), [ shortLambda(!check(TokNewline)) ]);
       } else if (match([ TokDot ])) {
         ignoreNewlines();
         var name = consume(TokIdentifier, "Expect property name after '.'.");
@@ -446,12 +448,9 @@ class Parser {
         ignoreNewlines();
         consume(TokRightBracket, "Expect ']' after expression");
         expr = new Expr.SubscriptGet(previous(), expr, index);
-      // } else if (matchSequence([ TokNewline, TokDot ])) {
-      //   // handle stuff like:
-      //   //    foo
-      //   //      .bar
-      //   var name = consume(TokIdentifier, "Expect property name after '.'.");
-      //   expr = new Expr.Get(expr, name);
+      // } else if (check(TokInterpolation)) {
+      //   // todo: tagged template
+      //   expr = taggedTemplate(expr);
       } else {
         break;
       }
@@ -476,16 +475,71 @@ class Parser {
     ignoreNewlines();
     var paren = consume(TokRightParen, "Expect ')' after arguments.");
 
+    // Handle trailing arguments (eg, `foo('a') { it }`)
+    if (match([ TokLeftBrace ])) {
+      arguments.push(shortLambda(!check(TokNewline)));
+    }
+
     return new Expr.Call(callee, paren, arguments);
+  }
+
+  // private function taggedTemplate(callee:Expr):Expr {
+  //   var firstTok = peek();
+  //   var parts:Array<Expr> = [];
+  //   var placeholders:Array<Expr> = [
+  //     new Expr.Literal('') // Required
+  //   ];
+
+  //   // Note: Interpolated strings end on a `TokString`
+  //   if (!check(TokString)) {
+  //     do {
+  //       if (match([ TokInterpolation ])) {
+  //         parts.push(new Expr.Literal(previous().literal));
+  //       } else {
+  //         placeholders.push(expression());
+  //       }
+  //     } while (!check(TokString) && !isAtEnd());
+  //   }
+  //   parts.push(primary());
+
+  //   return new Expr.Call(callee, firstTok, [
+  //     new Expr.ArrayLiteral(firstTok, parts),
+  //     new Expr.ArrayLiteral(firstTok, placeholders)
+  //   ]);
+  // }
+
+  private function interpolation(expr:Expr):Expr {
+    while (!isAtEnd()) {
+      var next:Expr;
+      if (match([ TokString ])) { 
+        return new Expr.Binary(
+          expr,
+          new Token(TokPlus, '+', null, previous().pos),
+          new Expr.Literal(previous().literal)
+        ); 
+      } else if (match([ TokInterpolation ])) {
+        next = new Expr.Literal(previous().literal);
+      } else {
+        next = new Expr.Grouping(expression());
+      }
+      expr = new Expr.Binary(
+        expr,
+        new Token(TokPlus, '+', null, peek().pos),
+        next 
+      );
+    }
+    error(peek(), 'Unexpected end of interpolated string');
+    return expr;
   }
 
   private function primary():Expr {
     if (match([ TokFalse ])) return new Expr.Literal(false);
     if (match([ TokTrue ])) return new Expr.Literal(true);
     if (match([ TokNull ])) return new Expr.Literal(null);
+    if (match([ TokNumber, TokString ])) return new Expr.Literal(previous().literal);
 
-    if (match([ TokNumber, TokString, TokInterpolation ])) {
-      return new Expr.Literal(previous().literal);
+    if (match([ TokInterpolation ])) { 
+      return interpolation(new Expr.Literal(previous().literal));
     }
 
     if (match([ TokSuper ])) {
@@ -630,19 +684,6 @@ class Parser {
       }
     }
     return false;
-  }
-
-  private function matchSequence(types:Array<TokenType>):Bool {
-    for (type in types) {
-      if (!check(type)) {
-        return false;
-      }
-    }
-    // Only advance if all checks passed
-    for (_ in types) {
-      advance();
-    }
-    return true;
   }
 
   private function consume(type:TokenType, message:String) {
