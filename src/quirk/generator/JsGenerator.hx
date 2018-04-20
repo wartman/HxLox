@@ -24,11 +24,11 @@ class JsGenerator
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    return stmts.map(generateStmt).join('');
+    return stmts.map(generateStmt).join('\n');
   }
 
   private function generateStmt(stmt:Stmt):String {
-    return stmt.accept(this);
+    return getIndent() + stmt.accept(this) + ';';
   }
 
   private function generateExpr(expr:Null<Expr>):String {
@@ -37,7 +37,7 @@ class JsGenerator
   }
 
   public function visitBlockStmt(stmt:Stmt.Block):String {
-    return '{\n' + stmt.statements.map(generateStmt).join('\n') + '\n}';
+    return '{\n' + stmt.statements.map(generateStmt).join(';\n') + '\n}';
   }
 
   public function visitExpressionStmt(stmt:Stmt.Expression):String {
@@ -68,7 +68,7 @@ class JsGenerator
 
   public function visitVarStmt(stmt:Stmt.Var):String {
     return 'var ' + stmt.name.lexeme + ' = '
-      + stmt.initializer != null ? generateExpr(stmt.initializer) : 'null';
+      + (stmt.initializer != null ? generateExpr(stmt.initializer) : 'null');
   }
 
   public function visitBinaryExpr(expr:Expr.Binary):String {
@@ -123,44 +123,56 @@ class JsGenerator
   }
 
   public function visitFunStmt(stmt:Stmt.Fun):String {
-    return 'function ' + stmt.name.lexeme + '('
+    var out = 'function ' + stmt.name.lexeme + '('
       + stmt.params.map(function (t) return t.lexeme).join(', ') + ') '
-      + '{\n' + stmt.body.map(generateStmt).join('\n') + '\n};\n';
+      + '{\n';
+    indent(); 
+    out += stmt.body.map(generateStmt).join('\n'); 
+    outdent();
+    return out + '\n' + getIndent() + '}';
   }
 
   public function visitClassStmt(stmt:Stmt.Class):String {
     var name = stmt.name.lexeme;
-    var out = 'var ' + name + '=';
+    var out = '';
     var init = stmt.methods.find(function (m) {
-      return m.name.lexeme == 'new';
+      return m.name.lexeme == 'init';
     });
     if (init != null) {
       init.name = stmt.name;
-      out += visitFunStmt(init);
+      out += visitFunStmt(init) + ';\n';
     } else {
       out += 'function ' + name + '() {};\n';
     }
     if (stmt.superclass != null) {
       out += '__quirk_extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
     }
-    for (method in stmt.methods) {
-      out += name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-    }
+    out += stmt.methods.filter(function (method) {
+      return method.name.lexeme != name;
+    }).map(function (method) {
+      return name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
+    }).join(';\n');
     return out;
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    return '';
+    var target = stmt.path
+      .map(function (t) return t.lexeme)
+      .join('/');
+    // todo: actually load requirements
+    return stmt.imports.map(function (t) {
+      return 'var ' + t.lexeme + ' = require("' + target + '").' + t.lexeme;
+    }).join(';\n');
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
-    return '';
+    return 'module.exports = {' + stmt.exports.map(function (t) {
+      return t.lexeme + ': ' + t.lexeme;
+    }).join(', ') + '}';
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):String {
-    var fun:Stmt.Fun = cast expr.fun;
-    return 'function (' + fun.params.map(function (p) return p.lexeme).join(', ') + ')'
-      + '{\n' + fun.body.map(generateStmt).join('\n') + '\n}';
+    return visitFunStmt(cast expr.fun);
   }
 
   public function visitVariableExpr(expr:Expr.Variable):String {
@@ -185,6 +197,25 @@ class JsGenerator
       out += expr.keys[i].lexeme + ': ' + generateExpr(expr.values[i]) + ',';
     }
     return out + '}';
+  }
+
+  private function getIndent() {
+    var out = '';
+    for (i in 0...this.indentLevel) {
+      out += '  ';
+    }
+    return out;
+  }
+
+  private function indent() {
+    indentLevel++;
+  }
+
+  private function outdent() {
+    indentLevel--;
+    if (indentLevel < 0) {
+      indentLevel = 0;
+    }
   }
 
 }

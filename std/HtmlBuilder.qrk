@@ -1,0 +1,103 @@
+module Std.HtmlBuilder for HtmlBuilder, html
+
+class HtmlBuilder {
+  
+  init() {
+    this.nodes = []
+  }
+  
+  buildTag(tagName, attributes, body) {
+    var text = null
+    var children = []
+    if (body != null) {
+      var builder = HtmlBuilder()
+      text = body(builder)
+      children = builder.nodes
+      if (text != null) {
+        if (children.length() > 0) {
+          throw 'Cannot have text and children in the same node. Use `HtmlBuilder::text`'
+        }
+        children = [ { text: text } ]
+      }
+    }
+    this.nodes.push({
+      tag: tagName,
+      attributes: attributes,
+      children: children,
+      text: null
+    })
+    return this
+  }
+
+  text(body) {
+    var text = body()
+    this.nodes.push({ text: text })
+    return this
+  }
+
+  html(attributes, body) {
+    return this.buildTag('html', attributes, body)
+  }
+  
+  div(attributes, body) {
+    return this.buildTag('div', attributes, body)
+  }
+  
+  header(attributes, body) {
+    return this.buildTag('header', attributes, body)
+  }
+  
+  a(attributes, body) {
+    return this.buildTag('a', attributes, body)
+  }
+
+  link(attributes, body) {
+    return this.buildTag('link', attributes, body)
+  }
+
+  p(attributes, body) {
+    return this.buildTag('p', attributes, body)
+  }
+
+  // etc
+  
+  toString() {
+    return this.nodes.map { this.renderNode(it) }.join('')
+  }
+  
+  renderNode(node) {
+    if (node.text != null) {
+      return node.text 
+    }
+    var out = '<${node.tag}${this.renderAttributes(node.attributes)}'
+    if (node.children.length() > 0) {
+      out = out + '>' + node.children.map { this.renderNode(it) }.join('') + '</${node.tag}>'
+    } else {
+      out = out + '/>'
+    }
+    return out
+  }
+  
+  renderAttributes(attrs) {
+    var names = Reflect.getFieldNames(attrs)
+    if (names.length() == 0) return ''
+    return ' ' + names.map {
+      if (it == 'className') {
+        return 'class="${ htmlEscape(attrs[it]) }"'
+      }
+      return '${ it }="${ htmlEscape(attrs[it]) }"'
+    }.join(' ')
+  }
+
+}
+
+fun htmlEscape(str) {
+  // todo
+  return str
+}
+
+fun html(body) {
+  var builder = HtmlBuilder()
+  body(builder)
+  return builder
+}

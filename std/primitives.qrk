@@ -54,6 +54,10 @@ class Reflect {
     return __REFLECT_GET_METHOD_NAMES(cls)
   }
 
+  static getFieldNames(cls) {
+    return __REFLECT_GET_FIELD_NAMES(cls)
+  }
+
   static getField(cls, name) {
     return __REFLECT_GET_FIELD(cls, name)
   }

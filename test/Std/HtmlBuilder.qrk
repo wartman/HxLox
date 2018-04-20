@@ -1,0 +1,33 @@
+module Test.Std.HtmlBuilder for HtmlBuilderTest
+
+import Std.Test for Case
+import Std.HtmlBuilder for html
+
+class HtmlBuilderTest : Case {
+  
+  @test('Generates html')
+  testGen() {
+    var builder = html {
+      it.div({ className: 'foo' }) { 'hello world' }
+    }
+    this.assertEquals(builder.toString(), '<div class="foo">hello world</div>')
+  }
+
+  @test('Something more complex')
+  testComples() {
+    var builder = html {
+      it.div({ className: 'foo' }) {
+        it.header({ className: 'foo-header' }) {
+          it.text {'bar'}
+        }
+        it.p({}) {
+          it.text {'foo '}
+          it.a({ href: "bar/bin" }) { 'barf' }
+          it.text {' bar'}
+        }
+      }
+    }
+    this.assertEquals(builder.toString(), '<div class="foo"><header class="foo-header">bar</header><p>foo <a href="bar/bin">barf</a> bar</p></div>')
+  }
+
+}

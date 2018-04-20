@@ -74,6 +74,16 @@ class CoreTypes {
       var name:String = Std.string(args[1]);
       return obj.fields.get(name);
     }, 2));
+    globals.define('__REFLECT_GET_FIELD_NAMES', new ExternCallable(function (args) {
+      var target:Instance = cast args[0];
+      var arrCls:Class = globals.values.get('Array');
+      var names:Array<String> = [];
+      for (name in target.fields.keys()) {
+        names.push(name);
+      }
+      var arr:Instance = arrCls.call(interpreter, [ names ]);
+      return arr;
+    }, 1));
     globals.define('__REFLECT_GET_METHOD', new ExternCallable(function (args) {
       var inst:Instance = cast args[0];
       return inst.getClass().findMethod(inst, Std.string(args[1]));
@@ -136,7 +146,7 @@ class CoreTypes {
     }, 3));
     globals.define('__ARRAY_LENGTH', new ExternCallable(function (args) {
       var values:Array<Dynamic> = args[0];
-      return values.length;
+      return Std.int(values.length);
     }, 1));
     globals.define('__ARRAY_PUSH', new ExternCallable(function (args) {
       var values:Array<Dynamic> = args[0];

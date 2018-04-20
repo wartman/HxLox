@@ -57,7 +57,7 @@ class Parser {
     if (kind != 'lambda' || check(TokIdentifier)) {
       name = consume(TokIdentifier, 'Expect ${kind} name.');
     } else {
-      name = new Token(TokIdentifier, '<annonymous>', '<annonymous>', previous().pos);
+      name = new Token(TokIdentifier, '', null, previous().pos);
     }
 
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
@@ -632,7 +632,7 @@ class Parser {
     }
 
     return new Expr.Lambda(new Stmt.Fun(
-      new Token(TokIdentifier, '<annonymous>', null, previous().pos),
+      new Token(TokIdentifier, '', null, previous().pos),
       params,
       body,
       []

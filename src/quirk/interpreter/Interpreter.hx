@@ -52,8 +52,6 @@ class Interpreter
         execute(stmt);
       }
     } catch (error:RuntimeError) {
-      // Sys.println('In ' + currentModule.toString());
-      // HxLox.runtimeError(error);
       reporter.report(error.token.pos, error.token.lexeme, error.message);
     }
   }
