@@ -14,7 +14,7 @@ class HtmlBuilderTest : Case {
   }
 
   @test('Something more complex')
-  testComples() {
+  testComplex() {
     var builder = html {
       it.div({ className: 'foo' }) {
         it.header({ className: 'foo-header' }) {

@@ -9,7 +9,9 @@ import quirk.DefaultModuleLoader;
 import quirk.interpreter.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
+import quirk.generator.Generator;
 import quirk.generator.JsGenerator;
+import quirk.generator.PhpGenerator;
 
 using haxe.io.Path;
 
@@ -22,7 +24,11 @@ class Quirk {
     var args = Sys.args();
     if (args.length > 1) {
       if (args[0] == 'gen') {
-        genFile(args[1]);
+        switch (args[1]) {
+          case '--js': genFile(args[2], 'js');
+          case '--php': genFile(args[2], 'php');
+          default: throw 'Invalid generator type';
+        }
         return;
       }
       Sys.print('Usage: quirk [script]');
@@ -33,7 +39,7 @@ class Quirk {
     }
   }
 
-  private static function genFile(path:String) {
+  private static function genFile(path:String, kind:String) {
     var reporter = new DefaultErrorReporter();
     var loader = new DefaultModuleLoader(Sys.getCwd());
     var source = loader.load(path);
@@ -41,7 +47,9 @@ class Quirk {
     var tokens = scanner.scanTokens();
     var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
-    var generator = new JsGenerator(loader, reporter);
+    var generator:Generator = kind == 'js'
+      ? new JsGenerator(loader, reporter)
+      : new PhpGenerator(loader, reporter);
     var js = generator.generate(stmts);
 
     trace(js);

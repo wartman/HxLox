@@ -2,21 +2,24 @@ package quirk.generator;
 
 import quirk.Expr;
 import quirk.Stmt;
-import quirk.ExprVisitor;
-import quirk.StmtVisitor;
 import quirk.ErrorReporter;
 import quirk.ModuleLoader;
+import quirk.ExprVisitor;
+import quirk.StmtVisitor;
 
 using Lambda;
 
-class JsGenerator
-  implements ExprVisitor<String>
+class JsGenerator 
+  implements Generator
+  implements ExprVisitor<String> 
   implements StmtVisitor<String>
 {
 
   private var reporter:ErrorReporter;
   private var loader:ModuleLoader;
+  private var uid:Int = 0;
   private var indentLevel:Int = 0;
+  private var append:Array<String> = [];
 
   public function new(loader:ModuleLoader, reporter:ErrorReporter) {
     this.loader = loader;
@@ -24,11 +27,17 @@ class JsGenerator
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    return stmts.map(generateStmt).join('\n');
+    return prelude() + stmts.map(generateStmt).filter(function (s) {
+      return s != null;
+    }).concat(this.append).join('\n');
+  }
+
+  private function prelude() {
+    return 'var __quirk = require("quirk");\n';
   }
 
   private function generateStmt(stmt:Stmt):String {
-    return getIndent() + stmt.accept(this) + ';';
+    return stmt.accept(this);
   }
 
   private function generateExpr(expr:Null<Expr>):String {
@@ -37,38 +46,53 @@ class JsGenerator
   }
 
   public function visitBlockStmt(stmt:Stmt.Block):String {
-    return '{\n' + stmt.statements.map(generateStmt).join(';\n') + '\n}';
+    var out = '{\n';
+    indent(); 
+    out += stmt.statements.map(generateStmt).join('\n') + '\n';
+    outdent();
+    out += getIndent() + '}';
+    return out;
   }
 
   public function visitExpressionStmt(stmt:Stmt.Expression):String {
-    return generateExpr(stmt.expression);
+    return getIndent() + generateExpr(stmt.expression) + ';';
   }
 
   public function visitIfStmt(stmt:Stmt.If):String {
-    return '';
+    var out = getIndent() + 'if (' + generateExpr(stmt.condition) + ')' + generateStmt(stmt.thenBranch);
+    if (stmt.elseBranch != null) {
+      out += ' else ' + generateStmt(stmt.elseBranch);
+    }
+    return out;
   }
 
   public function visitReturnStmt(stmt:Stmt.Return):String {
-    return stmt.value == null
-      ? 'return'
-      : 'return ' + generateExpr(stmt.value);
+    return getIndent() + (stmt.value == null
+      ? 'return;'
+      : 'return ' + generateExpr(stmt.value) + ';');
   }
 
   public function visitThrowStmt(stmt:Stmt.Throw):String {
-    return 'throw ' + generateExpr(stmt.expr);
+    return getIndent() + 'throw ' + generateExpr(stmt.expr) + ';';
   }
 
   public function visitTryStmt(stmt:Stmt.Try):String {
-    return '';
+    var out = getIndent() + 'try ' + generateStmt(stmt.body);
+    if (stmt.caught != null) {
+      out += ' catch ' + generateStmt(stmt.caught);
+    }
+    return out;
   }
 
   public function visitWhileStmt(stmt:Stmt.While):String {
-    return '';
+    return getIndent() + 'while (' + generateExpr(stmt.condition) + ') '
+      + generateStmt(stmt.body);
   }
 
   public function visitVarStmt(stmt:Stmt.Var):String {
-    return 'var ' + stmt.name.lexeme + ' = '
-      + (stmt.initializer != null ? generateExpr(stmt.initializer) : 'null');
+    return getIndent() + 'var ' + stmt.name.lexeme + ' = '
+      + (stmt.initializer != null ? generateExpr(stmt.initializer) : 'null')
+      + ';';
   }
 
   public function visitBinaryExpr(expr:Expr.Binary):String {
@@ -111,7 +135,7 @@ class JsGenerator
   }
 
   public function visitSuperExpr(expr:Expr.Super):String {
-    return 'super.' + expr.method.lexeme;
+    return 'this.__super__.' + expr.method.lexeme;
   }
 
   public function visitThisExpr(expr:Expr.This):String {
@@ -138,37 +162,55 @@ class JsGenerator
     var init = stmt.methods.find(function (m) {
       return m.name.lexeme == 'init';
     });
+
+    if (stmt.meta.length > 0) {
+      addMeta(name, stmt.meta);
+    }
+    
     if (init != null) {
       init.name = stmt.name;
       out += visitFunStmt(init) + ';\n';
     } else {
       out += 'function ' + name + '() {};\n';
     }
+
+
     if (stmt.superclass != null) {
-      out += '__quirk_extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
+      out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
+      out += name + '.prototype.__super__ = ' + generateExpr(stmt.superclass) + ';\n'; 
     }
+
+    out += stmt.staticMethods.map(function (method) {
+      return name + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
+    }).join(';\n');
+    
     out += stmt.methods.filter(function (method) {
       return method.name.lexeme != name;
     }).map(function (method) {
+      if (method.meta.length > 0) {
+        addMeta('${name}.prototype.${method.name.lexeme}', method.meta);
+      }
       return name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }).join(';\n');
+
     return out;
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    var target = stmt.path
-      .map(function (t) return t.lexeme)
-      .join('/');
+    var target = stmt.path.map(function (t) return t.lexeme).join('/');
+    var tmp = tempVar('req');
+    var out = 'var ${tmp} = require("${target}");\n';
     // todo: actually load requirements
-    return stmt.imports.map(function (t) {
-      return 'var ' + t.lexeme + ' = require("' + target + '").' + t.lexeme;
+    return out + stmt.imports.map(function (t) {
+      return 'var ' + t.lexeme + ' = ${tmp}.' + t.lexeme;
     }).join(';\n');
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
-    return 'module.exports = {' + stmt.exports.map(function (t) {
+    append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
-    }).join(', ') + '}';
+    }).join(', ') + '}');
+    return null;
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):String {
@@ -180,7 +222,8 @@ class JsGenerator
   }
 
   public function visitMetadataExpr(expr:Expr.Metadata):String {
-    return '';
+    // capture meta?
+    return '{ "${ expr.name.lexeme }" : [' + expr.args.map(generateExpr).join(',') + '] }';
   }
 
   public function visitAssignExpr(expr:Expr.Assign):String {
@@ -197,6 +240,10 @@ class JsGenerator
       out += expr.keys[i].lexeme + ': ' + generateExpr(expr.values[i]) + ',';
     }
     return out + '}';
+  }
+
+  private function addMeta(target:String, data:Array<Expr>) {
+    append.push('__quirk.addMeta(' + target + ', [' + data.map(generateExpr).join(', ') + ']);');
   }
 
   private function getIndent() {
@@ -216,6 +263,10 @@ class JsGenerator
     if (indentLevel < 0) {
       indentLevel = 0;
     }
+  }
+
+  private function tempVar(prefix:String = 'tmp') {
+    return '__quirk_' + prefix + (uid++);
   }
 
 }

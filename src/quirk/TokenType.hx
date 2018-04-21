@@ -46,6 +46,7 @@ enum TokenType {
   TokThrow;
   TokTry;
   TokCatch;
+  TokSharp;
 
   // One or two character tokens
   TokBang;
