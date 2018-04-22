@@ -1,0 +1,12 @@
+module Example.Express for main
+
+@require('express')
+import Express as Express
+
+fun main() {
+  var app = Express()
+  
+  app.get('/') { | req, res |
+    res.send('Hello world')
+  }
+}

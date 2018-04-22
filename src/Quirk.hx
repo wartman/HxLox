@@ -24,9 +24,13 @@ class Quirk {
     var args = Sys.args();
     if (args.length > 1) {
       if (args[0] == 'gen') {
+        trace(args);
+        if (args.length != 4) {
+          throw 'Usage: gen [kind] [src] [dst]';
+        }
         switch (args[1]) {
-          case '--js': genFile(args[2], 'js');
-          case '--php': genFile(args[2], 'php');
+          case '--js': genFile(args[2], args[3], 'js');
+          case '--php': genFile(args[2], args[3], 'php');
           default: throw 'Invalid generator type';
         }
         return;
@@ -39,7 +43,7 @@ class Quirk {
     }
   }
 
-  private static function genFile(path:String, kind:String) {
+  private static function genFile(path:String, dest:String, kind:String) {
     var reporter = new DefaultErrorReporter();
     var loader = new DefaultModuleLoader(Sys.getCwd());
     var source = loader.load(path);
@@ -50,9 +54,17 @@ class Quirk {
     var generator:Generator = kind == 'js'
       ? new JsGenerator(loader, reporter)
       : new PhpGenerator(loader, reporter);
-    var js = generator.generate(stmts);
+    var generated = generator.generate(stmts);
 
-    trace(js);
+    var dest = haxe.io.Path.join([ Sys.getCwd(), dest ]);
+    dest = haxe.io.Path.withExtension(dest, kind);
+    var dir = haxe.io.Path.directory(dest);
+    if (!sys.FileSystem.exists(dir)) {
+      sys.FileSystem.createDirectory(dir);
+    }
+    sys.io.File.saveContent(dest, generated);
+
+    Sys.println('Saved to :' + dest);
   }
 
   private static function runFile(path:String) {

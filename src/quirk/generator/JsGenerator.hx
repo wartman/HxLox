@@ -135,7 +135,7 @@ class JsGenerator
   }
 
   public function visitSuperExpr(expr:Expr.Super):String {
-    return 'this.__super__.' + expr.method.lexeme;
+    return 'this.__super__.' + expr.method.lexeme + '.bind(this)'; // maybe???
   }
 
   public function visitThisExpr(expr:Expr.This):String {
@@ -167,12 +167,30 @@ class JsGenerator
       addMeta(name, stmt.meta);
     }
     
+
+    // Getting around the fact that we don't use the `new` keyword.
+    // Feels like this could be a bit of an issue, so... I dunno. might
+    // come back later and make real JS constructors.
+    var initParams = init != null 
+      ? init.params.map(function (t) return t.lexeme).join(', ')
+      : '';  
+    out += getIndent() + 'function ' + name + '(' + initParams + ') {\n';
+    indent();
+    var inst = tempVar('obj');
+    out += getIndent() + 'var ' + inst + ' = Object.create(' + name + '.prototype);\n';
     if (init != null) {
-      init.name = stmt.name;
-      out += visitFunStmt(init) + ';\n';
-    } else {
-      out += 'function ' + name + '() {};\n';
+      out += getIndent() + inst + '.' + init.name.lexeme + '(' + initParams + ');\n';
     }
+    out += getIndent() + 'return ' + inst + ';\n';
+    outdent();
+    out += getIndent() + '};\n';
+
+    // if (init != null) {
+    //   init.name = stmt.name;
+    //   out += visitFunStmt(init) + ';\n';
+    // } else {
+    //   out += 'function ' + name + '() {};\n';
+    // }
 
 
     if (stmt.superclass != null) {
@@ -184,32 +202,40 @@ class JsGenerator
       return name + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }).join(';\n');
     
-    out += stmt.methods.filter(function (method) {
-      return method.name.lexeme != name;
-    }).map(function (method) {
+    out += stmt.methods.map(function (method) {
       if (method.meta.length > 0) {
         addMeta('${name}.prototype.${method.name.lexeme}', method.meta);
       }
       return name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-    }).join(';\n');
+    }).join(';\n') + ';';
 
     return out;
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    var target = stmt.path.map(function (t) return t.lexeme).join('/');
+    // Allow `@require` to override default paths
+    var metaReq:Null<Expr.Metadata> = cast stmt.meta.find(function (m) {
+      var meta:Expr.Metadata = cast m;
+      return meta.name.lexeme == 'require';
+    });
+    var target:String = metaReq != null
+      ? generateExpr(metaReq.args[0])
+      : '"' + stmt.path.map(function (t) return t.lexeme).join('/') + '"';
     var tmp = tempVar('req');
-    var out = 'var ${tmp} = require("${target}");\n';
+    var out = [ 'var ${tmp} = require(${target})' ];
+    if (stmt.alias != null) {
+      out.push(stmt.alias.lexeme + ' = ' + tmp);
+    }
     // todo: actually load requirements
-    return out + stmt.imports.map(function (t) {
+    return out.concat(stmt.imports.map(function (t) {
       return 'var ' + t.lexeme + ' = ${tmp}.' + t.lexeme;
-    }).join(';\n');
+    })).join(';\n') + ';';
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
     append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
-    }).join(', ') + '}');
+    }).join(', ') + '};');
     return null;
   }
 
