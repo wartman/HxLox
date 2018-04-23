@@ -2,5 +2,7 @@
 -cp src
 
 -resource std/Primitives.qrk@primitives
+-resource lib/js-lib.js@lib:js
+-resource lib/js-minimal-cjs.js@lib:js-cjs
 
 -neko bin/quirk.n

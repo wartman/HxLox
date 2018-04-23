@@ -9,6 +9,11 @@ import quirk.StmtVisitor;
 
 using Lambda;
 
+typedef JsGeneratorOptions = {
+  bundle:Bool,
+  isMain:Bool
+};
+
 class JsGenerator 
   implements Generator
   implements ExprVisitor<String> 
@@ -20,20 +25,63 @@ class JsGenerator
   private var uid:Int = 0;
   private var indentLevel:Int = 0;
   private var append:Array<String> = [];
+  private var options:JsGeneratorOptions;
+  private var moduleName:String = null;
+  private var deps:Array<String> = [];
+  private var modules:Map<String, String>;
 
-  public function new(loader:ModuleLoader, reporter:ErrorReporter) {
+  public function new(
+    loader:ModuleLoader,
+    reporter:ErrorReporter,
+    ?options:JsGeneratorOptions,
+    ?modules:Map<String, String>
+  ) {
     this.loader = loader;
     this.reporter = reporter;
+    this.options = options != null 
+      ? options
+      : { bundle: true, isMain: true };
+    this.modules = modules != null ? modules : new Map();
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    return prelude() + stmts.map(generateStmt).filter(function (s) {
+    var out = prelude() + stmts.map(generateStmt).filter(function (s) {
       return s != null;
     }).concat(this.append).join('\n');
+    if (options.bundle) {
+      if (moduleName == null) {
+        if (options.isMain) {
+          moduleName = 'main';
+        } else {
+          throw 'Expected a module declaration';
+        }
+      }
+      out = '__quirk_env.define("' + moduleName + '", [' +
+        deps.join(',') + '], function (require, module) {\n'
+        + out + '\n});\n';
+    }
+    if (options.bundle == false || options.isMain == true) {
+      out = bundlePrelude() + '\n' + out + '__quirk_init("' + moduleName + '");\n';
+    }
+    return out;
+  }
+
+  private function bundlePrelude() {
+    return [
+      haxe.Resource.getString('lib:js-cjs'),
+      '__quirk_env.define("quirk/lib/js-lib", [], function (require, module) {',
+      haxe.Resource.getString('lib:js'),
+      '})'
+    ].concat([ for (key in modules.keys()) modules.get(key) ]).join(';\n') + ';\n';
   }
 
   private function prelude() {
-    return 'var __quirk = require("quirk");\n';
+    var temp = tempVar('core');
+    return [ 
+      'var ${temp} = require("quirk/lib/js-lib")',
+      'var __quirk = ${temp}.__quirk',
+      'var Reflect = ${temp}.Reflect'
+    ].join(';\n') + ';\n';
   }
 
   private function generateStmt(stmt:Stmt):String {
@@ -167,7 +215,6 @@ class JsGenerator
       addMeta(name, stmt.meta);
     }
     
-
     // Getting around the fact that we don't use the `new` keyword.
     // Feels like this could be a bit of an issue, so... I dunno. might
     // come back later and make real JS constructors.
@@ -192,10 +239,11 @@ class JsGenerator
     //   out += 'function ' + name + '() {};\n';
     // }
 
+    out += name + '.__name = "' + name + '";\n';
 
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
-      out += name + '.prototype.__super__ = ' + generateExpr(stmt.superclass) + ';\n'; 
+      out += name + '.prototype.__super = ' + generateExpr(stmt.superclass) + ';\n'; 
     }
 
     out += stmt.staticMethods.map(function (method) {
@@ -220,11 +268,20 @@ class JsGenerator
     });
     var target:String = metaReq != null
       ? generateExpr(metaReq.args[0])
-      : '"' + stmt.path.map(function (t) return t.lexeme).join('/') + '"';
+      : '"' + loader.find(stmt.path) + '"';
+
+    if (options.bundle) {
+      this.deps.push(target);
+      var loadName = loader.find(stmt.path);
+      if (!this.modules.exists(loadName)) {
+        this.modules.set(loadName, bundleModule(loadName));
+      }
+    }
+
     var tmp = tempVar('req');
     var out = [ 'var ${tmp} = require(${target})' ];
     if (stmt.alias != null) {
-      out.push(stmt.alias.lexeme + ' = ' + tmp);
+      out.push('var ' + stmt.alias.lexeme + ' = ' + tmp);
     }
     // todo: actually load requirements
     return out.concat(stmt.imports.map(function (t) {
@@ -233,6 +290,9 @@ class JsGenerator
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
+    if (options.bundle == true) {
+      moduleName = loader.find(stmt.path);
+    }
     append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
     }).join(', ') + '};');
@@ -261,15 +321,35 @@ class JsGenerator
   }
 
   public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):String {
-    var out = '{';
-    for (i in 0...expr.values.length) {
-      out += expr.keys[i].lexeme + ': ' + generateExpr(expr.values[i]) + ',';
+    if (expr.values.length == 0) {
+      return '{}';
     }
-    return out + '}';
+    var out = '{\n';
+    var pairs = [];
+    indent();
+    for (i in 0...expr.values.length) {
+      pairs.push( getIndent() + expr.keys[i].lexeme + ': ' + generateExpr(expr.values[i]));
+    }
+    out += pairs.join(',\n') + '\n';
+    outdent();
+    return out + getIndent() + '}';
   }
 
   private function addMeta(target:String, data:Array<Expr>) {
     append.push('__quirk.addMeta(' + target + ', [' + data.map(generateExpr).join(', ') + ']);');
+  }
+
+  private function bundleModule(path:String) {
+    var source = loader.load(path);
+    var scanner = new quirk.Scanner(source, path, reporter);
+    var tokens = scanner.scanTokens();
+    var parser = new quirk.Parser(tokens, reporter);
+    var stmts = parser.parse();
+    var generator = new JsGenerator(loader, reporter, {
+      bundle: true,
+      isMain: false
+    }, modules);
+    return generator.generate(stmts);
   }
 
   private function getIndent() {

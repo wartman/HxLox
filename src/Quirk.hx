@@ -10,6 +10,7 @@ import quirk.interpreter.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
 import quirk.generator.Generator;
+import quirk.generator.JsModuleLoader;
 import quirk.generator.JsGenerator;
 import quirk.generator.PhpGenerator;
 
@@ -45,14 +46,16 @@ class Quirk {
 
   private static function genFile(path:String, dest:String, kind:String) {
     var reporter = new DefaultErrorReporter();
-    var loader = new DefaultModuleLoader(Sys.getCwd());
+    var loader = kind == 'js'
+      ? new JsModuleLoader(Sys.getCwd())
+      : new DefaultModuleLoader(Sys.getCwd());
     var source = loader.load(path);
     var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();
     var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
     var generator:Generator = kind == 'js'
-      ? new JsGenerator(loader, reporter)
+      ? new JsGenerator(loader, reporter, { bundle: true, isMain: true })
       : new PhpGenerator(loader, reporter);
     var generated = generator.generate(stmts);
 

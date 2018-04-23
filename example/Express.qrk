@@ -1,12 +1,19 @@
 module Example.Express for main
 
-@require('express')
-import Express as Express
+// Use `@require` to override the default path.
+// `import Npm.Express as Express` would also work 
+@require('express') import Express as Express
+// `Std` paths point to `quirk/bin/Std` in `npm_modules` by default.
+import Std.HtmlBuilder for html
 
 fun main() {
   var app = Express()
   
   app.get('/') { | req, res |
-    res.send('Hello world')
+    res.send(html {
+      it.div({ className: 'main', id: 'hello-world' }) { 
+        it.p { 'Hello world!' }
+      }
+    }.toString())
   }
 }
