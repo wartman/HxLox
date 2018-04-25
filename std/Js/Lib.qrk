@@ -1,0 +1,82 @@
+@core
+@noPrelude
+module Std.Js.Lib for __quirk, Reflect, System
+
+/// Helpers for Quirk in the JS target
+class __quirk {
+
+  static extend(obj, superclass) {
+    obj.prototype = Object.create(superclass.prototype)
+    return obj
+  }
+
+  static addClass(name, cls) {
+    this.classes[name] = cls
+  }
+
+  static addMeta(target, meta) {
+    target.__quirk_meta = meta
+  }
+
+}
+
+// @todo:
+// Need to add property definitions to classes.
+__quirk.classes = {}
+
+/// `Reflect` implementation for the js target.
+class Reflect {
+  
+  static getClass(target) {
+    return __quirk.classes[this.getClassName(target)]
+  }
+
+  static getClassName(target) {
+    return target.__name
+  }
+
+  static getSuperclass(target) {
+    return target.__super || target.prototype.__super
+  }
+
+  static getProperty(target, name) {
+    return target[name]
+  }
+
+  static getPropertyNames(target) {
+    return Object.keys(target)
+  }
+
+  static getMetadata(target, name) {
+    if (target.__quirk_meta == null) {
+      var sup = this.getSuperclass(target)
+      if (sup == null) return null
+      return this.getMetadata(sup)
+    }
+    var data = target.__quirk_meta[name]
+    if (data == null) {
+      var sup = this.getSuperclass(target)
+      if (sup == null) return null
+      return this.getMetadata(sup, name)
+    }
+    return data
+  }
+
+}
+
+/// `System` implementation for the js target
+class System {
+  
+  static print(s) {
+    console.log(s)
+  }
+
+  static println(s) {
+    this.ptint(s + '\n')
+  }
+
+  static getCwd() {
+    throw 'Not available on JS target'
+  }
+
+}

@@ -8,6 +8,7 @@ import quirk.ExprVisitor;
 import quirk.StmtVisitor;
 
 using Lambda;
+using StringTools;
 
 typedef JsGeneratorOptions = {
   bundle:Bool,
@@ -56,6 +57,10 @@ class JsGenerator
           throw 'Expected a module declaration';
         }
       }
+      // Need a better method than hard coding this here:
+      if (moduleName != 'Std/Js/Lib') {
+        deps.push('"Std/Js/Lib"');
+      }
       out = '__quirk_env.define("' + moduleName + '", [' +
         deps.join(',') + '], function (require, module) {\n'
         + out + '\n});\n';
@@ -69,19 +74,25 @@ class JsGenerator
   private function bundlePrelude() {
     return [
       haxe.Resource.getString('lib:js-cjs'),
-      '__quirk_env.define("quirk/lib/js-lib", [], function (require, module) {',
-      haxe.Resource.getString('lib:js'),
-      '})'
-    ].concat([ for (key in modules.keys()) modules.get(key) ]).join(';\n') + ';\n';
+      bundleModule('Std/Js/Lib'),
+      // '__quirk_env.define("quirk/lib/js-lib", [], function (require, module) {',
+      // haxe.Resource.getString('lib:js'),
+      // '}).enable();'
+    ].concat([ for (key in modules.keys()) modules.get(key) ]).join('\n');
   }
 
   private function prelude() {
     var temp = tempVar('core');
-    return [ 
-      'var ${temp} = require("quirk/lib/js-lib")',
-      'var __quirk = ${temp}.__quirk',
-      'var Reflect = ${temp}.Reflect'
-    ].join(';\n') + ';\n';
+    // need a better way for this
+    if (moduleName != 'Std/Js/Lib') {
+      return [ 
+        'var ${temp} = require("Std/Js/Lib")',
+        'var __quirk = ${temp}.__quirk',
+        'var Reflect = ${temp}.Reflect',
+        'var System = ${temp}.System'
+      ].join(';\n') + ';\n';
+    }
+    return '';
   }
 
   private function generateStmt(stmt:Stmt):String {
@@ -161,7 +172,7 @@ class JsGenerator
 
   public function visitLiteralExpr(expr:Expr.Literal):String {
     return Std.is(expr.value, String)
-      ? '"' + expr.value + '"' // todo: handle escaping
+      ? '"' + Std.string(expr.value).replace('"', '\\"') + '"'
       : expr.value;
   }
 
@@ -240,6 +251,7 @@ class JsGenerator
     // }
 
     out += name + '.__name = "' + name + '";\n';
+    out += name + '.prototype.__name = "' + name + '";\n';
 
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
@@ -339,12 +351,17 @@ class JsGenerator
     append.push('__quirk.addMeta(' + target + ', [' + data.map(generateExpr).join(', ') + ']);');
   }
 
-  private function bundleModule(path:String) {
+  private function parseModule(path:String) {
     var source = loader.load(path);
     var scanner = new quirk.Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();
     var parser = new quirk.Parser(tokens, reporter);
     var stmts = parser.parse();
+    return stmts;
+  }
+
+  private function bundleModule(path:String) {
+    var stmts = parseModule(path);
     var generator = new JsGenerator(loader, reporter, {
       bundle: true,
       isMain: false

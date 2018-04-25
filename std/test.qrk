@@ -11,8 +11,8 @@ class Runner {
     this.cases = []
   }
 
-  add(case) {
-    this.cases.push(case)
+  add(c) {
+    this.cases.push(c)
     return this
   }
 
@@ -22,9 +22,9 @@ class Runner {
 
   run() {
     this.result = Result()
-    for (var i = 0; i < this.cases.length(); i = i + 1) {
-      var case = this.cases[i]
-      this.runCase(case)
+    for (var i = 0; i < this.cases.length; i = i + 1) {
+      var c = this.cases[i]
+      this.runCase(c)
     }
     this.print(this.result.toString())
     return this.result.wasSuccessful()
@@ -38,7 +38,7 @@ class Runner {
 
     this.print('Class: ' + className + ' ')
 
-    for (var i = 0; i < methods.length(); i = i + 1) {
+    for (var i = 0; i < methods.length; i = i + 1) {
       var methodName = methods[i]
       var method = Reflect.getMethod(c, methodName)
       var testInfo = Reflect.getMetadata(method, 'test')
@@ -46,7 +46,7 @@ class Runner {
       if (testInfo != null) {
 
         var label = '';
-        if (testInfo.length() > 0) {
+        if (testInfo.length > 0) {
           label = testInfo.join('\n')
         }
 
@@ -123,7 +123,7 @@ class Result {
 
   toString() {
     var out = ""
-    for (var i = 0; i < this.tests.length(); i = i + 1) {
+    for (var i = 0; i < this.tests.length; i = i + 1) {
       var test = this.tests[i]
       if (test.success == false) {
         out = out + "* " + test.className + "::" + test.methodName + "()\n"
@@ -138,9 +138,9 @@ class Result {
     } else {
       out = out + 'FAILED '
     }
-    out = out + this.tests.length() + ' tests, ' +
+    out = out + this.tests.length + ' tests, ' +
       this.failures + ' failed, ' +
-      (this.tests.length() - this.failures) + ' success \n'
+      (this.tests.length - this.failures) + ' success \n'
 
     return out
   }
