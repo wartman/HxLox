@@ -1,5 +1,7 @@
 module Std.HtmlBuilder for HtmlBuilder, html
 
+import Std.Core for Reflect
+
 class HtmlBuilder {
   
   init() {
@@ -14,7 +16,7 @@ class HtmlBuilder {
       text = body(builder)
       children = builder.nodes
       if (text != null) {
-        if (children.length() > 0) {
+        if (children.length > 0) {
           throw 'Cannot have text and children in the same node. Use `HtmlBuilder::text`'
         }
         children = [ { text: text } ]
@@ -70,7 +72,7 @@ class HtmlBuilder {
       return node.text 
     }
     var out = '<${node.tag}${this.renderAttributes(node.attributes)}'
-    if (node.children.length() > 0) {
+    if (node.children.length > 0) {
       out = out + '>' + node.children.map { this.renderNode(it) }.join('') + '</${node.tag}>'
     } else {
       out = out + '/>'
@@ -80,7 +82,7 @@ class HtmlBuilder {
   
   renderAttributes(attrs) {
     var names = Reflect.getFieldNames(attrs)
-    if (names.length() == 0) return ''
+    if (names.length == 0) return ''
     return ' ' + names.map {
       if (it == 'className') {
         return 'class="${ htmlEscape(attrs[it]) }"'

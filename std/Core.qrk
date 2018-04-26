@@ -1,66 +1,68 @@
+// Note: implementations for this module are in `quirk/interpreter/foreign/CoreTypes.hx`
+module Std.Core for System, Reflect
+
 class System {
-  
-  foreign static getCwd()
 
-  foreign static print(s)
-
-  static println(s) {
-    this.print(s + '\n')
+  static print(s) {
+    __SYSTEM_PRINT(s)
   }
 
-}
+  static println(s) {
+    __SYSTEM_PRINT_LN(s)
+  }
 
-class Std {
+  static getModule() {
+    return __SYSTEM_GET_MODULE()
+  }
 
-  foreign static toString(s)
-  
+  static getCwd() {
+    return __SYSTEM_GET_CWD()
+  }
+
 }
 
 class Reflect {
-  
-  foreign static getType(cls)
 
-  foreign static is(a, b)
-
-  foreign static getMethod(obj, name)
-
-  foreign static getMethodName(obj)
-
-  foreign static getField(cls, name)
-
-  foreign static getMetadata(target, name)
-
-}
-
-class String { 
-
-}
-
-class Array {
-  
-  foreign [index]
-
-  foreign [index] = value
-
-  foreign map(cb)
-
-  foreign join(glue)
-
-}
-
-class Map {
-
-  new() {
-    this.keys = []
-    this.values = []
-  }
-  
-  [key] {
-    return this.get(key)
+  static getClass(cls) {
+    return __REFLECT_TYPE(cls)
   }
 
-  [key] = (value) {
-    this.set(key, value)
+  static getClassName(cls) {
+    return __REFLECT_TYPE(cls)
+  }
+
+  static is(a, b) {
+    var passing = this.getType(a) == this.getType(b)
+    if (passing != true) {
+      var superclass = this.getSuperclass(a)
+      if (superclass == null) return false
+      return this.is(superclass, b)
+    }
+    return passing
+  }
+
+  static getSuperclass(target) {
+    return __REFLECT_GET_SUPERCLASS(target)
+  }
+
+  static getProperty(obj, name) {
+    return __REFLECT_GET_METHOD(obj, name)
+  }
+
+  static getPropertyNames(cls) {
+    return __REFLECT_GET_METHOD_NAMES(cls)
+  }
+
+  static getFieldNames(cls) {
+    return __REFLECT_GET_FIELD_NAMES(cls)
+  }
+
+  static getField(cls, name) {
+    return __REFLECT_GET_FIELD(cls, name)
+  }
+
+  static getMetadata(target, name) {
+    return __REFLECT_GET_METADATA(target, name)
   }
 
 }

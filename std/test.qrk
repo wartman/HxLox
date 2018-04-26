@@ -4,6 +4,8 @@ module Std.Test for
   Status,
   Case
 
+import Std.Core for System, Reflect
+
 class Runner {
 
   init() {
@@ -31,15 +33,14 @@ class Runner {
   }
 
   runCase(c) {
-    var className = Reflect.getType(c)
+    var className = Reflect.getClassName(c)
     var methods = Reflect.getMethodNames(c)
     var before = this.getBeforeMethods(c)
     var after = this.getAfterMethods(c)
 
     this.print('Class: ' + className + ' ')
 
-    for (var i = 0; i < methods.length; i = i + 1) {
-      var methodName = methods[i]
+    methods.forEach { | methodName |
       var method = Reflect.getMethod(c, methodName)
       var testInfo = Reflect.getMetadata(method, 'test')
       
@@ -90,13 +91,13 @@ class Runner {
 
   getMarkedMethods(c, name) {
     var marked = [];
-    Reflect.getMethodNames(c).forEach({ | methodName |
+    Reflect.getMethodNames(c).forEach { | methodName |
       var method = Reflect.getMethod(c, methodName)
       var meta = Reflect.getMetadata(method, name)
       if (meta != null) {
         marked.push(method)
       }
-    })
+    }
     return marked
   }
 

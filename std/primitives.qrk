@@ -6,68 +6,6 @@
 //
 // I'm thinking up a better way to handle extern hooks :P.
 
-class System {
-
-  static print(s) {
-    __SYSTEM_PRINT(s)
-  }
-
-  static println(s) {
-    __SYSTEM_PRINT_LN(s)
-  }
-
-  static getModule() {
-    return __SYSTEM_GET_MODULE()
-  }
-
-  static getCwd() {
-    return __SYSTEM_GET_CWD()
-  }
-
-}
-
-class Reflect {
-
-  static getType(cls) {
-    return __REFLECT_TYPE(cls)
-  }
-
-  static is(a, b) {
-    var passing = this.getType(a) == this.getType(b)
-    if (passing != true) {
-      var superclass = this.getSuperclass(a)
-      if (superclass == null) return false
-      return this.is(superclass, b)
-    }
-    return passing
-  }
-
-  static getSuperclass(target) {
-    return __REFLECT_GET_SUPERCLASS(target)
-  }
-
-  static getMethod(obj, name) {
-    return __REFLECT_GET_METHOD(obj, name)
-  }
-
-  static getMethodNames(cls) {
-    return __REFLECT_GET_METHOD_NAMES(cls)
-  }
-
-  static getFieldNames(cls) {
-    return __REFLECT_GET_FIELD_NAMES(cls)
-  }
-
-  static getField(cls, name) {
-    return __REFLECT_GET_FIELD(cls, name)
-  }
-
-  static getMetadata(target, name) {
-    return __REFLECT_GET_METADATA(target, name)
-  }
-
-}
-
 class Exception {
 
   init(message) {

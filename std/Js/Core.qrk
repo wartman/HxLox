@@ -1,0 +1,97 @@
+module Std.Core for Reflect, System
+
+/// `System` implementation for the js target
+class System {
+  
+  static print(s) {
+    console.log(s)
+  }
+
+  static println(s) {
+    this.print(s + '\n')
+  }
+
+  static getCwd() {
+    throw 'Not available on JS target'
+  }
+
+}
+
+/// `Reflect` implementation for the js target. This depends on
+/// the `lib/js-lib.js` file to work.
+class Reflect {
+  
+  static getClass(target) {
+    return __quirk.classes[this.getClassName(target)]
+  }
+
+  static getType(target) {
+    return this.getClassName(target)
+  }
+
+  static getClassName(target) {
+    return target.__name
+  }
+
+  static getSuperclass(target) {
+    if (target.prototype != null) {
+      return target.prototype.__super
+    }
+    return target.__super
+  }
+
+  static is(a, b) {
+    var passing = this.getType(a) == this.getType(b)
+    if (passing != true) {
+      var superclass = this.getSuperclass(a)
+      if (superclass == null) return false
+      return this.is(superclass, b)
+    }
+    return passing
+  }
+
+  static getMethod(target, name) {
+    var f = target[name]
+    if (f.bind) {
+      var bound = f.bind(target)
+
+      // HACK
+      if (f.__quirk_meta != null) {
+        bound.__quirk_meta = f.__quirk_meta  
+      }
+
+      return bound
+    }
+    return f
+  }
+
+  static getMethodNames(target) {
+    var cls = this.getClass(target)
+    if (cls == null) return []
+    return Object.getOwnPropertyNames(cls.prototype) 
+  }
+
+  static getField(target, name) {
+    return target[name]
+  }
+
+  static getFieldNames(target) {
+    return Object.keys(target)
+  }
+
+  static getMetadata(target, name) {
+    if (target.__quirk_meta == null) {
+      var sup = this.getSuperclass(target)
+      if (sup == null) return null
+      return this.getMetadata(sup)
+    }
+    var data = target.__quirk_meta.filter { it.name == name }.pop()
+    if (data == null) {
+      var sup = this.getSuperclass(target)
+      if (sup == null) return null
+      return this.getMetadata(sup, name)
+    }
+    return data.values
+  }
+
+}

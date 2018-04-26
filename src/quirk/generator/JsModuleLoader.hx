@@ -8,7 +8,11 @@ using haxe.io.Path;
 
 class JsModuleLoader implements ModuleLoader {
 
-  private static var builtins:Array<String> = [ 'Std' ];
+  // Resolve js implementation paths. These refer to the actual locations
+  // of the files, NOT the module name.
+  private static var implementations:Map<String, String> = [ 
+    'Std/Core' => 'Std/Js/Core'
+  ];
   private var root:String;
   private var extension:String = 'qrk';
 
@@ -22,17 +26,16 @@ class JsModuleLoader implements ModuleLoader {
     if (first.toLowerCase() == 'npm') {
       return parts.splice(0, 1).join('/');
     }
-    // if (builtins.indexOf(first) >= 0) {
-    //   return [ 'quirk', 'bin' ].concat(parts).join('/');
-    // }
     return parts.join('/');
   }
 
   public function load(path:String):String {
+    if (implementations.exists(path)) {
+      path = implementations.get(path);
+    }
     if (path.extension() == '') {
       path = path.withExtension(extension);
     }
-    // trace(Path.join([ root, path ]));
     return File.getBytes(Path.join([ root, path ])).toString();
   }
 

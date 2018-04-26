@@ -1,0 +1,24 @@
+class __quirk {
+  
+  static extend(obj, superclass) {
+    obj.prototype = Object.create(superclass.prototype)
+    return obj
+  }
+
+  static addClass(name, cls) {
+    this.classes[name] = cls
+  }
+
+  static getClass(name) {
+    return this.classes[name]
+  }
+
+  static addMeta(target, meta) {
+    target.__quirk_meta = meta
+  }
+
+}
+
+__quirk.classes = []
+
+// Todo: stick CJS stuff in here too?

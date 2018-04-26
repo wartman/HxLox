@@ -1,5 +1,6 @@
 module Test.Basics for ArrayTest, ObjectTest, StringTest, LambdaTest
 
+import Std.Core for Reflect
 import Std.Test for Case
 
 class ArrayTest : Case {
@@ -8,7 +9,7 @@ class ArrayTest : Case {
   testPush() {
     var arr = [ 1, 2, 3 ]
     arr.push(4)
-    this.assertEquals(arr.length(), 4)
+    this.assertEquals(arr.length, 4)
     this.assertEquals(arr[3], 4)
   }
 
@@ -25,7 +26,7 @@ class ArrayTest : Case {
       // Check odd whitespace
       3 ]
     var val = arr.pop()
-    this.assertEquals(arr.length(), 2)
+    this.assertEquals(arr.length, 2)
     this.assertEquals(val, 3)
   }
 
@@ -107,7 +108,7 @@ class StringTest : Case {
   testSplit() {
     var arr = 'a,b'.split(',')
     this.assertTrue(Reflect.getType(arr) == 'Array')
-    this.assertEquals(arr.length(), 2)
+    this.assertEquals(arr.length, 2)
   }
 
   @test('Simple interpolation')

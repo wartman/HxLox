@@ -46,9 +46,10 @@ class JsGenerator
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    var out = prelude() + stmts.map(generateStmt).filter(function (s) {
+    var out = stmts.map(generateStmt).filter(function (s) {
       return s != null;
     }).concat(this.append).join('\n');
+    
     if (options.bundle) {
       if (moduleName == null) {
         if (options.isMain) {
@@ -57,42 +58,25 @@ class JsGenerator
           throw 'Expected a module declaration';
         }
       }
-      // Need a better method than hard coding this here:
-      if (moduleName != 'Std/Js/Lib') {
-        deps.push('"Std/Js/Lib"');
-      }
       out = '__quirk_env.define("' + moduleName + '", [' +
         deps.join(',') + '], function (require, module) {\n'
         + out + '\n});\n';
     }
+
     if (options.bundle == false || options.isMain == true) {
       out = bundlePrelude() + '\n' + out + '__quirk_init("' + moduleName + '");\n';
     }
+
     return out;
   }
 
   private function bundlePrelude() {
     return [
+      ';(function (global) {',
       haxe.Resource.getString('lib:js-cjs'),
-      bundleModule('Std/Js/Lib'),
-      // '__quirk_env.define("quirk/lib/js-lib", [], function (require, module) {',
-      // haxe.Resource.getString('lib:js'),
-      // '}).enable();'
+      haxe.Resource.getString('lib:js'),
+      '})(global != null ? global : window);'
     ].concat([ for (key in modules.keys()) modules.get(key) ]).join('\n');
-  }
-
-  private function prelude() {
-    var temp = tempVar('core');
-    // need a better way for this
-    if (moduleName != 'Std/Js/Lib') {
-      return [ 
-        'var ${temp} = require("Std/Js/Lib")',
-        'var __quirk = ${temp}.__quirk',
-        'var Reflect = ${temp}.Reflect',
-        'var System = ${temp}.System'
-      ].join(';\n') + ';\n';
-    }
-    return '';
   }
 
   private function generateStmt(stmt:Stmt):String {
@@ -138,7 +122,7 @@ class JsGenerator
   public function visitTryStmt(stmt:Stmt.Try):String {
     var out = getIndent() + 'try ' + generateStmt(stmt.body);
     if (stmt.caught != null) {
-      out += ' catch ' + generateStmt(stmt.caught);
+      out += ' catch (' + stmt.exception.lexeme + ') ' + generateStmt(stmt.caught);
     }
     return out;
   }
@@ -217,6 +201,7 @@ class JsGenerator
 
   public function visitClassStmt(stmt:Stmt.Class):String {
     var name = stmt.name.lexeme;
+    var fullName = moduleName.replace('/', '.') + '.' + name;
     var out = '';
     var init = stmt.methods.find(function (m) {
       return m.name.lexeme == 'init';
@@ -250,13 +235,14 @@ class JsGenerator
     //   out += 'function ' + name + '() {};\n';
     // }
 
-    out += name + '.__name = "' + name + '";\n';
-    out += name + '.prototype.__name = "' + name + '";\n';
-
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
       out += name + '.prototype.__super = ' + generateExpr(stmt.superclass) + ';\n'; 
     }
+
+    out += name + '.__name = "' + fullName + '";\n';
+    out += name + '.prototype.__name = "' + fullName + '";\n';
+    out += '__quirk.addClass("' + fullName + '", ' + name + ');\n';
 
     out += stmt.staticMethods.map(function (method) {
       return name + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
@@ -312,7 +298,7 @@ class JsGenerator
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):String {
-    return visitFunStmt(cast expr.fun);
+    return visitFunStmt(cast expr.fun) + '.bind(this)';
   }
 
   public function visitVariableExpr(expr:Expr.Variable):String {
@@ -321,7 +307,7 @@ class JsGenerator
 
   public function visitMetadataExpr(expr:Expr.Metadata):String {
     // capture meta?
-    return '{ "${ expr.name.lexeme }" : [' + expr.args.map(generateExpr).join(',') + '] }';
+    return '{ name: "${ expr.name.lexeme }", values: [' + expr.args.map(generateExpr).join(',') + '] }';
   }
 
   public function visitAssignExpr(expr:Expr.Assign):String {
@@ -368,6 +354,15 @@ class JsGenerator
     }, modules);
     return generator.generate(stmts);
   }
+
+  // private function standaloneModule(path:String) {
+  //   var stmts = parseModule(path);
+  //   var generator = new JsGenerator(loader, reporter, {
+  //     bundle: false,
+  //     isMain: false
+  //   });
+  //   return generator.generate(stmts);
+  // }
 
   private function getIndent() {
     var out = '';
