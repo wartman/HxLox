@@ -203,12 +203,13 @@ class JsGenerator
     var name = stmt.name.lexeme;
     var fullName = moduleName.replace('/', '.') + '.' + name;
     var out = '';
+    var metaList:Map<String, Array<Expr>> = new Map();
     var init = stmt.methods.find(function (m) {
       return m.name.lexeme == 'init';
     });
 
     if (stmt.meta.length > 0) {
-      addMeta(name, stmt.meta);
+      metaList.set('__TYPE__', stmt.meta);
     }
     
     // Getting around the fact that we don't use the `new` keyword.
@@ -247,13 +248,15 @@ class JsGenerator
     out += stmt.staticMethods.map(function (method) {
       return name + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }).join(';\n');
-    
+
     out += stmt.methods.map(function (method) {
       if (method.meta.length > 0) {
-        addMeta('${name}.prototype.${method.name.lexeme}', method.meta);
+        metaList.set(method.name.lexeme, method.meta);
       }
       return name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }).join(';\n') + ';';
+
+    addMeta(name, metaList);
 
     return out;
   }
@@ -307,7 +310,7 @@ class JsGenerator
 
   public function visitMetadataExpr(expr:Expr.Metadata):String {
     // capture meta?
-    return '{ name: "${ expr.name.lexeme }", values: [' + expr.args.map(generateExpr).join(',') + '] }';
+    return '{ name: "' + expr.name.lexeme + '", values: [' + expr.args.map(generateExpr).join(',') + '] }';
   }
 
   public function visitAssignExpr(expr:Expr.Assign):String {
@@ -333,8 +336,16 @@ class JsGenerator
     return out + getIndent() + '}';
   }
 
-  private function addMeta(target:String, data:Array<Expr>) {
-    append.push('__quirk.addMeta(' + target + ', [' + data.map(generateExpr).join(', ') + ']);');
+  private function addMeta(target:String, data:Map<String, Array<Expr>>) {
+    var out = '__quirk.addMeta(' + target + ', {\n';
+    indent();
+    out += [ 
+      for (key in data.keys()) 
+        getIndent() + '"' + key + '": [' + data.get(key).map(generateExpr).join(', ') + ']' 
+    ].join(',\n');
+    outdent();
+    out += '\n' + getIndent() + '});';
+    append.push(out);
   }
 
   private function parseModule(path:String) {

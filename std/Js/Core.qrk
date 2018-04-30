@@ -1,10 +1,16 @@
-module Std.Core for Reflect, System
+module Std.Core for Reflect, System, Meta
 
 /// `System` implementation for the js target
 class System {
-  
+
   static print(s) {
-    console.log(s)
+    if (process != null) {
+      // Print WITHOUT a newline in Node environments
+      process.stdout.write(s)
+    } else {
+      // Web -- note that this will add a newline
+      console.log(s)
+    }
   }
 
   static println(s) {
@@ -12,10 +18,15 @@ class System {
   }
 
   static getCwd() {
+    if (process != null) {
+      return process.cwd()
+    }
     throw 'Not available on JS target'
   }
 
 }
+
+var _toString = ({}).toString
 
 /// `Reflect` implementation for the js target. This depends on
 /// the `lib/js-lib.js` file to work.
@@ -26,6 +37,10 @@ class Reflect {
   }
 
   static getType(target) {
+    if (_toString.call(target) == '[object Array]') {
+      return 'Array'
+    }
+    // todo: more primitive checks
     return this.getClassName(target)
   }
 
@@ -52,15 +67,8 @@ class Reflect {
 
   static getMethod(target, name) {
     var f = target[name]
-    if (f.bind) {
-      var bound = f.bind(target)
-
-      // HACK
-      if (f.__quirk_meta != null) {
-        bound.__quirk_meta = f.__quirk_meta  
-      }
-
-      return bound
+    if (f && f.bind) {
+      return f.bind(target)
     }
     return f
   }
@@ -79,19 +87,27 @@ class Reflect {
     return Object.keys(target)
   }
 
-  static getMetadata(target, name) {
-    if (target.__quirk_meta == null) {
-      var sup = this.getSuperclass(target)
-      if (sup == null) return null
-      return this.getMetadata(sup)
+}
+
+class Meta {
+  
+  static getFields(cls) {
+    var name = Reflect.getClassName(cls)
+    var sup = Reflect.getSuperclass(cls)
+    var meta = __quirk.meta[name]
+    
+    if (meta == null) meta = {}
+
+    if (sup != null) {
+      // todo: will need to handle deep merging
+      return Object.assign({}, this.getFields(sup), meta)
     }
-    var data = target.__quirk_meta.filter { it.name == name }.pop()
-    if (data == null) {
-      var sup = this.getSuperclass(target)
-      if (sup == null) return null
-      return this.getMetadata(sup, name)
-    }
-    return data.values
+
+    return meta
+  }
+
+  static getType(cls) {
+    return this.getFields(cls).__TYPE__
   }
 
 }

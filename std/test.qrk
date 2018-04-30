@@ -4,7 +4,7 @@ module Std.Test for
   Status,
   Case
 
-import Std.Core for System, Reflect
+import Std.Core for System, Reflect, Meta
 
 class Runner {
 
@@ -34,18 +34,18 @@ class Runner {
 
   runCase(c) {
     var className = Reflect.getClassName(c)
-    var methods = Reflect.getMethodNames(c)
+    var meta = Meta.getFields(c)
     var before = this.getBeforeMethods(c)
     var after = this.getAfterMethods(c)
 
     this.print('Class: ' + className + ' ')
 
-    methods.forEach { | methodName |
+    Reflect.getFieldNames(meta).forEach { | methodName |
       var method = Reflect.getMethod(c, methodName)
-      var testInfo = Reflect.getMetadata(method, 'test')
-      
-      if (testInfo != null) {
+      var testMeta = meta[methodName].filter { it.name == 'test' }
 
+      testMeta.forEach {
+        var testInfo = it.values
         var label = '';
         if (testInfo.length > 0) {
           label = testInfo.join('\n')
@@ -66,7 +66,7 @@ class Runner {
           }
         } catch (e) {
           this.print('E')
-          if (Reflect.getType(e) == 'Status') {
+          if (Reflect.getType(e) == 'Std.Test.Status') {
             e = e.error
           }
           c.currentTest.error = "exception thrown: " + e +
@@ -91,11 +91,10 @@ class Runner {
 
   getMarkedMethods(c, name) {
     var marked = [];
-    Reflect.getMethodNames(c).forEach { | methodName |
-      var method = Reflect.getMethod(c, methodName)
-      var meta = Reflect.getMetadata(method, name)
-      if (meta != null) {
-        marked.push(method)
+    var meta = Meta.getFields(c)
+    Reflect.getFieldNames(meta).forEach { | methodName |
+      if (meta[methodName].filter { it.name == name }.length > 0) {
+        marked.push(Reflect.getMethod(c, methodName))
       }
     }
     return marked

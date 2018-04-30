@@ -7,7 +7,7 @@ class ReflectTest : Case {
 
   @test('Gets the correct type name')
   testGetType() {
-    this.assertEquals(Reflect.getType(ReflectTest), 'ReflectTest');
+    this.assertEquals(Reflect.getType(ReflectTest), 'Test.Core.ReflectTest');
   }
 
   @test('Compares classes correctly')
