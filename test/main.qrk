@@ -3,7 +3,7 @@ module Test.Main for main
 import Std.Test for Runner
 import Test.Basics as Basics
 import Test.Core as Core
-// import Test.Syntax as Syntax
+import Test.Syntax as Syntax
 import Test.Std.HtmlBuilder for HtmlBuilderTest
 
 fun main() {
@@ -14,7 +14,7 @@ fun main() {
     add(Basics.ObjectTest()).
     add(Basics.StringTest()).
     add(Basics.LambdaTest()).
-    // add(Syntax.MethodTest()).
+    add(Syntax.MethodTest()).
     add(Core.ReflectTest()).
     add(HtmlBuilderTest())
 

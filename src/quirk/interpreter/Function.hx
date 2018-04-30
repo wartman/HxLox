@@ -4,10 +4,10 @@ import quirk.Stmt.Fun;
 
 class Function implements Callable {
 
-  private var declaration:Fun;
   private var closure:Environment;
   private var isInitializer:Bool;
   private var isLambda:Bool;
+  @:isVar public var declaration(default, null):Fun;
   @:isVar public var meta(default, null):Map<String, Array<Dynamic>>;
 
   public function new(
@@ -27,7 +27,7 @@ class Function implements Callable {
   public function bind(instance:Object) {
     var environment = new Environment(closure);
     environment.define('this', instance);
-    return new Function(declaration, environment, isInitializer, meta);
+    return new Function(declaration, environment, isInitializer, meta, isLambda);
   }
 
   public function isDynamic():Bool {

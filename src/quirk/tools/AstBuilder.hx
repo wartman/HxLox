@@ -12,9 +12,14 @@ class AstBuilder {
     var fields = Context.getBuildFields();
     var root = targetPath.split('.').pop();
     var exprs = Context.getModule(targetPath).map(function (type) {
-      var name = type.getClass().name;
-      if (name == root) return null;
-      return name;
+      switch type {
+        case haxe.macro.Type.TInst(_, _):
+          var name = type.getClass().name;
+          if (name == root) return null;
+          return name;
+        default:
+          return null;
+      }
     }).filter(function (name) return name != null);
 
     for (name in exprs) {

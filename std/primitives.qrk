@@ -20,6 +20,10 @@ class Array {
     this.values = values
   }
 
+  length {
+    return __ARRAY_LENGTH(this.values)
+  }
+
   __offsetGet(i) {
     return __ARRAY_GET(this.values, i)
   }
@@ -28,13 +32,9 @@ class Array {
     __ARRAY_SET(this.values, i, value)
   }
 
-  length() {
-    return __ARRAY_LENGTH(this.values)
-  }
-
   push(value) {
     __ARRAY_PUSH(this.values, value)
-    return this.length()
+    return this.length
   }
 
   pop() {
@@ -43,21 +43,32 @@ class Array {
 
   map(cb) {
     var out = []
-    for (var i = 0; i < this.length(); i = i + 1) {
+    for (var i = 0; i < this.length; i = i + 1) {
       out.push(cb(__ARRAY_GET(this.values, i), i))
     }
     return out
   }
 
+  filter(cb) {
+    var out = []
+    for (var i = 0; i < this.length; i = i + 1) {
+      var value = __ARRAY_GET(this.values, i) 
+      if (cb(value, i) == true) {
+        out.push(value)
+      }
+    }
+    return out
+  }
+
   forEach(cb) {
-    for (var i = 0; i < this.length(); i = i + 1) {
+    for (var i = 0; i < this.length; i = i + 1) {
       cb(__ARRAY_GET(this.values, i))
     }
   }
 
   reduce(cb, initial) {
     var out = initial
-    for (var i = 0; i < this.length(); i = i + 1) {
+    for (var i = 0; i < this.length; i = i + 1) {
       out = cb(out, __ARRAY_GET(this.values, i), i)
     }
     return out
@@ -72,7 +83,11 @@ class Array {
 class Object {
 
   __offsetGet(key) {
-    return Reflect.getField(this, key)
+    return __REFLECT_GET_FIELD(this, key)
+  }
+
+  __offsetSet(key, value) {
+    __REFLECT_SET_FIELD(this, key, value)
   }
 
 }

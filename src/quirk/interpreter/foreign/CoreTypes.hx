@@ -40,6 +40,22 @@ class CoreTypes {
       var target = args[0];
       if (Std.is(target, Instance)) {
         var inst:Instance = cast target;
+        return inst.getClass();
+      }
+      if (Std.is(target, Class)) {
+        var cls:Class = cast target;
+        return cls;
+      }
+      // Todo: should have a Function class.
+      // if (Std.is(target, Callable)) {
+      //   return '<callable>';
+      // }
+      return null;
+    }, 1));
+    globals.define('__REFLECT_TYPE_NAME', new ExternCallable(function (args) {
+      var target = args[0];
+      if (Std.is(target, Instance)) {
+        var inst:Instance = cast target;
         return inst.getClass().name;
       }
       if (Std.is(target, Class)) {
@@ -74,6 +90,13 @@ class CoreTypes {
       var name:String = Std.string(args[1]);
       return obj.fields.get(name);
     }, 2));
+    globals.define('__REFLECT_SET_FIELD', new ExternCallable(function (args) {
+      var target:Instance = cast args[0];
+      var key:String = Std.string(args[1]);
+      var value:Dynamic = args[2];
+      target.fields.set(key, value);
+      return null;
+    }, 3));
     globals.define('__REFLECT_GET_FIELD_NAMES', new ExternCallable(function (args) {
       var target:Instance = cast args[0];
       var arrCls:Class = globals.values.get('Array');
@@ -106,31 +129,30 @@ class CoreTypes {
     }, 1));
     globals.define('__REFLECT_GET_METADATA', new ExternCallable(function (args) {
       var target = args[0];
-      var name:String = Std.string(args[1]);
-      var items:Array<Dynamic> = null;
+      var arr:Class = globals.values.get('Array');
+      var obj:Class = globals.values.get('Object');
+      var name:String = null;
+      var out = [];
+
       if (Std.is(target, quirk.interpreter.Class)) {
         var cls:quirk.interpreter.Class = cast target;
-        if (cls.meta.exists(name)) {
-          items = cls.meta.get(name);
+        for (key in cls.meta.keys()) {
+          var inst = new Instance(obj);
+          inst.fields.set('name', key);
+          inst.fields.set('values', arr.call(interpreter, [ cls.meta.get(key) ]));
+          out.push(inst);
         }
       } else if (Std.is(target, quirk.interpreter.Function)) {
-        var cls:quirk.interpreter.Function = cast target;
-        if (cls.meta.exists(name)) {
-          items = cls.meta.get(name);
+        var f:quirk.interpreter.Function = cast target;
+        for (key in f.meta.keys()) {
+          var inst = new Instance(obj);
+          inst.fields.set('name', key);
+          inst.fields.set('values', arr.call(interpreter, [ f.meta.get(key) ]));
+          out.push(inst);
         }
-      } else {
-        // throw an error :P.
-        // need to figure out how to get the right line and all that
       }
-
-      if (items == null) {
-        return null;
-      }
-
-      // todo: handle module and imports
-      var arrCls:Class = globals.values.get('Array');
-      return arrCls.call(interpreter, [ items ]);
-    }, 2));
+      return arr.call(interpreter, [ out ]);
+    }, 1));
 
     // Array hooks
     globals.define('__ARRAY_GET', new ExternCallable(function (args) {

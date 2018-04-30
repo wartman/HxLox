@@ -60,11 +60,21 @@ class If implements Stmt {
   var elseBranch:Stmt;
 }
 
+enum FunKind {
+  FunFun;
+  FunLambda;
+  FunMethod;
+  FunGetter;
+  FunSetter;
+  FunConstructor;
+}
+
 class Fun implements Stmt {
   var name:Token;
   var params:Array<Token>;
   var body:Array<Stmt>;
   var meta:Array<Expr>;
+  var kind:FunKind;
 }
 
 class Return implements Stmt {

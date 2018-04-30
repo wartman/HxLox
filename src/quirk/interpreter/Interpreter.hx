@@ -13,6 +13,7 @@ import quirk.ModuleLoader;
 import quirk.DefaultModuleLoader;
 
 using haxe.io.Path;
+using quirk.interpreter.Helper;
 
 class Interpreter
   implements ExprVisitor<Dynamic>
@@ -26,6 +27,7 @@ class Interpreter
   private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
+  private var foreigns:Map<Foreign.Signature, Foreign> = new Map();
   private var objectMappings:Map<String, String> = [
     'String' => 'String'
   ];
@@ -40,7 +42,7 @@ class Interpreter
     this.loader = loader;
     this.reporter = reporter;
     environment = globals;
-    currentModule = new Module('root', globals, []);
+    currentModule = new Module(null, globals, []);
 
     // Setup default types
     quirk.interpreter.foreign.CoreTypes.addCoreTypes(this);
@@ -51,13 +53,17 @@ class Interpreter
       for (stmt in stmts) {
         execute(stmt);
       }
-    } catch (error:RuntimeError) {
+    } catch (error:RuntimeError)  {
       reporter.report(error.token.pos, error.token.lexeme, error.message);
     }
   }
 
   public function resolve(expr:Expr, depth:Int) {
     locals.set(expr, depth);
+  }
+
+  public function addForeign(foreign:Foreign) {
+    foreigns.set(foreign.signature, foreign);
   }
 
   private function execute(stmt:Stmt) {
@@ -75,7 +81,11 @@ class Interpreter
     } catch (e:Dynamic) {
       // No `finally` in haxe :P.
       this.environment = previous;
-      throw e; // not the best option, but eh.
+      #if neko
+        neko.Lib.rethrow(e); // not the best option, but eh.
+      #else
+        throw e;
+      #end
     }
 
     this.environment = previous;
@@ -125,18 +135,20 @@ class Interpreter
 
     for (method in stmt.methods) {
       var funMeta = intrepretMetadata(method.meta);
-      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
-      methods.set(method.name.lexeme, fun);
+      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta); 
+      methods.set(method.getMethodName(), fun);
     }
 
     for (method in stmt.staticMethods) {
       var funMeta = intrepretMetadata(method.meta);
       var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
-      staticMethods.set(method.name.lexeme, fun);
+      staticMethods.set(method.getMethodName(), fun);
     }
 
     var cls = new Class(
-      stmt.name.lexeme,
+      [ currentModule.toString(), stmt.name.lexeme ]
+        .filter(function (name) return name != null)
+        .join('.'),
       (cast superclass),
       methods,
       staticMethods,
@@ -158,7 +170,7 @@ class Interpreter
       var mod:Instance = obj.call(this, []);
       for (name in module.exports) {
         var tok:Token = new Token(TokIdentifier, name, '', stmt.alias.pos);
-        mod.set(tok, module.get(tok));
+        mod.set(this, tok, module.get(tok));
       }
       environment.define(stmt.alias.lexeme, mod);
     } else {
@@ -274,12 +286,13 @@ class Interpreter
   }
 
   public function visitSetExpr(expr:Expr.Set):Dynamic {
-    var object = evaluate(expr.object);
-    if (!Std.is(object, Instance)) {
+    var target = evaluate(expr.object);
+    if (!Std.is(target, Instance)) {
       throw new RuntimeError(expr.name, "Only instances have fields.");
     }
     var value = evaluate(expr.value);
-    (cast object).set(expr.name, value);
+    var object:Instance = cast target;
+    object.set(this, expr.name, value);
     return value;
   }
 
@@ -390,16 +403,17 @@ class Interpreter
   }
 
   public function visitGetExpr(expr:Expr.Get):Dynamic {
-    var object = evaluate(expr.object);
-    if (Std.is(object, Object)) {
-      return object.get(expr.name);
+    var target = evaluate(expr.object);
+    if (Std.is(target, Object)) {
+      var object:Instance = cast target;
+      return object.get(this, expr.name);
     }
 
     // Sorta a hack :P
-    var cls = getLiteralClass(object);
+    var cls = getLiteralClass(target);
     if (cls != null) {
-      var inst:Instance = cls.call(this, [ object ]);
-      return inst.get(expr.name);
+      var object:Instance = cls.call(this, [ target ]);
+      return object.get(this, expr.name);
     }
 
     throw new RuntimeError(expr.name, "Only objects have properties.");
@@ -452,9 +466,9 @@ class Interpreter
     var keys:Array<String> = [];
     var values:Array<Dynamic> = [];
     var object:Class = globals.values.get('Object');
-    var inst = object.call(this, []);
+    var inst:Instance = object.call(this, []);
     for (i in 0...expr.keys.length) {
-      inst.set(expr.keys[i], evaluate(expr.values[i]));
+      inst.set(this, expr.keys[i], evaluate(expr.values[i]));
     }
     return inst;
   }

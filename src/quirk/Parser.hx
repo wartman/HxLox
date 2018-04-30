@@ -28,7 +28,7 @@ class Parser {
     try {
       if (match([ TokAt ])) return declaration(parseMeta());
       if (match([ TokVar ])) return varDeclaration(meta);
-      if (match([ TokFun ])) return functionDeclaration('function', meta);
+      if (match([ TokFun ])) return functionDeclaration(Stmt.FunKind.FunFun, meta);
       if (match([ TokClass ])) return classDeclaration(meta);
       if (match([ TokImport ])) return importDeclaration(meta);
       if (match([ TokModule ])) return moduleDeclaration(meta);
@@ -51,16 +51,24 @@ class Parser {
     return new Stmt.Var(name, initializer, meta);
   }
 
-  private function functionDef(kind:String, ?meta:Array<Expr>):Stmt {
+  private function functionDef(kind:Stmt.FunKind, ?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name:Token;
-    if (kind != 'lambda' || check(TokIdentifier)) {
+    if (kind != Stmt.FunKind.FunLambda || check(TokIdentifier)) {
       name = consume(TokIdentifier, 'Expect ${kind} name.');
     } else {
       name = new Token(TokIdentifier, '', null, previous().pos);
     }
 
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
+    var params:Array<Token> = functionParams();
+    consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
+    var body:Array<Stmt> = block();
+    
+    return new Stmt.Fun(name, params, body, meta, kind);
+  }
+
+  private function functionParams():Array<Token> {
     var params:Array<Token> = [];
     if (!check(TokRightParen)) {
       do {
@@ -72,14 +80,10 @@ class Parser {
       } while(match([ TokComma ]));
     }
     consume(TokRightParen, 'Expect \')\' after parameters');
-    consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
-
-    var body:Array<Stmt> = block();
-    
-    return new Stmt.Fun(name, params, body, meta);
+    return params; 
   }
 
-  private function functionDeclaration(kind:String, ?meta:Array<Expr>):Stmt {
+  private function functionDeclaration(kind:Stmt.FunKind, ?meta:Array<Expr>):Stmt {
     var def = functionDef(kind, meta);
     ignoreNewlines();
     return def;
@@ -104,9 +108,9 @@ class Parser {
       ignoreNewlines();
       var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
       if (match([ TokStatic ])) {
-        staticMethods.push(cast functionDeclaration('method', funMeta));
+        staticMethods.push(fieldDeclaration(funMeta));
       } else {
-        methods.push(cast functionDeclaration('method', funMeta));
+        methods.push(fieldDeclaration(funMeta));
       }
     }
     ignoreNewlines();
@@ -114,6 +118,25 @@ class Parser {
     ignoreNewlines();
 
     return new Stmt.Class(name, superclass, methods, staticMethods, meta);
+  }
+
+  private function fieldDeclaration(meta:Array<Expr>):Stmt.Fun {
+    var name = consume(TokIdentifier, 'Expect an identifier');
+    var fun:Stmt.Fun = null;
+    if (match([ TokLeftBrace ])) {
+      fun = new Stmt.Fun(name, [], block(), meta, Stmt.FunKind.FunGetter);
+    } else if (match([ TokEqual ])) {
+      var param = consume(TokIdentifier, 'Expect an identifier');
+      consume(TokLeftBrace, 'Expect an `{` after the setter value');
+      fun = new Stmt.Fun(name, [ param ], block(), meta, Stmt.FunKind.FunSetter);
+    } else {
+      consume(TokLeftParen, "Expect '(' after method name");
+      var params = functionParams();
+      consume(TokLeftBrace, "Expect '{' after argument list");
+      fun = new Stmt.Fun(name, params, block(), meta, Stmt.FunKind.FunMethod);
+    }
+    ignoreNewlines();
+    return fun;
   }
 
   private function importDeclaration(?meta:Array<Expr>):Stmt {
@@ -573,7 +596,7 @@ class Parser {
     }
 
     if (match([ TokFun ])) {
-      return new Expr.Lambda(functionDef('lambda'));
+      return new Expr.Lambda(functionDef(Stmt.FunKind.FunLambda));
     }
 
     throw error(peek(), 'Expect expression');
@@ -635,7 +658,8 @@ class Parser {
       new Token(TokIdentifier, '', null, previous().pos),
       params,
       body,
-      []
+      [],
+      Stmt.FunKind.FunLambda
     ));
   }
 

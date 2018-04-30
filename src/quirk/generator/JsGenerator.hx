@@ -178,7 +178,7 @@ class JsGenerator
   }
 
   public function visitSuperExpr(expr:Expr.Super):String {
-    return 'this.__super__.' + expr.method.lexeme + '.bind(this)'; // maybe???
+    return 'this.__super.' + expr.method.lexeme + '.bind(this)'; // maybe???
   }
 
   public function visitThisExpr(expr:Expr.This):String {
@@ -204,6 +204,12 @@ class JsGenerator
     var fullName = moduleName.replace('/', '.') + '.' + name;
     var out = '';
     var metaList:Map<String, Array<Expr>> = new Map();
+    var propertyList:Map<String, { 
+      name:String,
+      target:String,
+      ?getter:String,
+      ?setter:String 
+    }> = new Map();
     var init = stmt.methods.find(function (m) {
       return m.name.lexeme == 'init';
     });
@@ -238,7 +244,7 @@ class JsGenerator
 
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
-      out += name + '.prototype.__super = ' + generateExpr(stmt.superclass) + ';\n'; 
+      out += name + '.prototype.__super = ' + generateExpr(stmt.superclass) + '.prototype;\n'; 
     }
 
     out += name + '.__name = "' + fullName + '";\n';
@@ -246,19 +252,70 @@ class JsGenerator
     out += '__quirk.addClass("' + fullName + '", ' + name + ');\n';
 
     out += stmt.staticMethods.map(function (method) {
-      return name + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-    }).join(';\n');
-
-    out += stmt.methods.map(function (method) {
-      if (method.meta.length > 0) {
-        metaList.set(method.name.lexeme, method.meta);
+      return visitFieldStmt(name, method, propertyList, metaList);
+    }).concat(stmt.methods.map(function (method) {
+      return visitFieldStmt(name + '.prototype', method, propertyList, metaList);
+    })).filter(function (v) return v != null).concat([ for (key in propertyList.keys()) {
+      var prop = propertyList.get(key);
+      var outProps = [];
+      indent();
+      if (prop.setter != null) {
+        outProps.push(getIndent() + 'set: ' + prop.setter);
       }
-      return name + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-    }).join(';\n') + ';';
+      if (prop.getter != null){
+        outProps.push(getIndent() + 'get: ' + prop.getter);
+      }
+      outdent();
+      'Object.defineProperty(' + prop.target + ', "' + prop.name + '", {\n' 
+        + outProps.join(',\n') + '\n' + getIndent() + '})';
+    } ]).join(';\n') + ';';
 
     addMeta(name, metaList);
 
     return out;
+  }
+
+  private function visitFieldStmt(
+    target:String,
+    method:Stmt.Fun,
+    propertyList:Map<String, {
+      target:String,
+      name:String,
+      ?getter:String,
+      ?setter:String 
+    }>,
+    metaList:Map<String, Array<Expr>>
+  ):String {
+    if (method.meta.length > 0) {
+      metaList.set(method.name.lexeme, method.meta);
+    }
+    var ident = target + '::' + method.name.lexeme;
+    var initProp = function () {
+      if (!propertyList.exists(ident)) {
+        propertyList.set(ident, { 
+          target: target,
+          name: method.name.lexeme,
+          setter: null, 
+          getter: null 
+        });
+      }
+    };
+    // todo: maybe be a bit more explicit about properties.
+    return switch method.kind {
+      case Stmt.FunKind.FunGetter:
+        initProp();
+        indent();
+        propertyList.get(ident).getter = visitFunStmt(method);
+        outdent();
+        null;
+      case Stmt.FunKind.FunSetter:
+        initProp();
+        indent();
+        propertyList.get(ident).setter = visitFunStmt(method);
+        outdent();
+        null; 
+      default: target + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
+    }
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {

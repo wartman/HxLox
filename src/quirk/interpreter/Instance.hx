@@ -2,6 +2,8 @@ package quirk.interpreter;
 
 import quirk.Token;
 
+using quirk.interpreter.Helper;
+
 class Instance implements Object {
 
   @:isVar public var fields(default, never):Map<String, Dynamic> = new Map();
@@ -11,19 +13,27 @@ class Instance implements Object {
     this.cls = cls;
   }
 
-  public function get(name:Token) {
+  public function get(interpreter:Interpreter, name:Token) {
     if (fields.exists(name.lexeme)) {
       return fields.get(name.lexeme);
     }
-    
-    var method = cls.findMethod(this, name.lexeme);
-    if (method != null) return method;
 
+    var method = cls.findMethod(this, name.lexeme);
+    if (method != null) return method; 
+
+    method = cls.findMethod(this, name.getGetterName());
+    if (method != null) return method.call(interpreter, []);
+    
     throw new RuntimeError(name, "Undefined property '" + name.lexeme + "'.");
   }
 
-  public function set(name:Token, value:Dynamic) {
-    fields.set(name.lexeme, value);
+  public function set(interpreter:Interpreter, name:Token, value:Dynamic) {
+    var setter = cls.findMethod(this, name.getSetterName());
+    if (setter != null) {
+      setter.call(interpreter, [ value ]);
+    } else {
+      fields.set(name.lexeme, value);
+    }
   }
 
   public function getClass() {

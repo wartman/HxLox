@@ -36,15 +36,11 @@ class Reflect {
     return __quirk.classes[this.getClassName(target)]
   }
 
-  static getType(target) {
+  static getClassName(target) {
     if (_toString.call(target) == '[object Array]') {
       return 'Array'
     }
     // todo: more primitive checks
-    return this.getClassName(target)
-  }
-
-  static getClassName(target) {
     return target.__name
   }
 
@@ -56,7 +52,7 @@ class Reflect {
   }
 
   static is(a, b) {
-    var passing = this.getType(a) == this.getType(b)
+    var passing = this.getClassName(a) == this.getClassName(b)
     if (passing != true) {
       var superclass = this.getSuperclass(a)
       if (superclass == null) return false
@@ -91,9 +87,9 @@ class Reflect {
 
 class Meta {
   
-  static getFields(cls) {
-    var name = Reflect.getClassName(cls)
-    var sup = Reflect.getSuperclass(cls)
+  static getFields(target) {
+    var name = Reflect.getClassName(target)
+    var sup = Reflect.getSuperclass(target)
     var meta = __quirk.meta[name]
     
     if (meta == null) meta = {}
@@ -106,8 +102,8 @@ class Meta {
     return meta
   }
 
-  static getType(cls) {
-    return this.getFields(cls).__TYPE__
+  static getType(target) {
+    return this.getFields(target).__TYPE__
   }
 
 }
