@@ -1,11 +1,3 @@
-// Note: these types are placed in globals, so we
-// don't define a module up top. This file is
-// never directly imported -- instead, it is
-// handled as a Haxe resource. The special
-// `__` prefixed functions are defined there.
-//
-// I'm thinking up a better way to handle extern hooks :P.
-
 class Exception {
 
   init(message) {
@@ -21,30 +13,25 @@ class Array {
   }
 
   length {
-    return __ARRAY_LENGTH(this.values)
+    return this.__length() 
   }
 
-  __offsetGet(i) {
-    return __ARRAY_GET(this.values, i)
-  }
+  foreign __length()
 
-  __offsetSet(i, value) {
-    __ARRAY_SET(this.values, i, value)
-  }
+  foreign __offsetGet(i)
 
-  push(value) {
-    __ARRAY_PUSH(this.values, value)
-    return this.length
-  }
+  foreign __offsetSet(i, value)
 
-  pop() {
-    return __ARRAY_POP(this.values)
-  }
+  foreign push(value)
+
+  foreign pop()
+
+  foreign join(glue)
 
   map(cb) {
     var out = []
     for (var i = 0; i < this.length; i = i + 1) {
-      out.push(cb(__ARRAY_GET(this.values, i), i))
+      out.push(cb(this[i], i))
     }
     return out
   }
@@ -52,7 +39,7 @@ class Array {
   filter(cb) {
     var out = []
     for (var i = 0; i < this.length; i = i + 1) {
-      var value = __ARRAY_GET(this.values, i) 
+      var value = this[i] 
       if (cb(value, i) == true) {
         out.push(value)
       }
@@ -61,34 +48,26 @@ class Array {
   }
 
   forEach(cb) {
-    for (var i = 0; i < this.length; i = i + 1) {
-      cb(__ARRAY_GET(this.values, i))
+    for (var i = 0; i < this.__length(); i = i + 1) {
+      cb(this[i])
     }
   }
 
   reduce(cb, initial) {
     var out = initial
     for (var i = 0; i < this.length; i = i + 1) {
-      out = cb(out, __ARRAY_GET(this.values, i), i)
+      out = cb(out, this[i], i)
     }
     return out
-  }
-
-  join(glue) {
-    return __ARRAY_JOIN(this.values, glue)
   }
 
 }
 
 class Object {
 
-  __offsetGet(key) {
-    return __REFLECT_GET_FIELD(this, key)
-  }
+  foreign __offsetGet(key)
 
-  __offsetSet(key, value) {
-    __REFLECT_SET_FIELD(this, key, value)
-  }
+  foreign __offsetSet(key, value)
 
 }
 
@@ -98,17 +77,11 @@ class String {
     this.value = value
   }
 
-  indexOf(find) {
-    return __STRING_INDEX_OF(this.value, find)
-  }
+  foreign indexOf(find)
 
-  split(sep) {
-    return __STRING_SPLIT(this.value, sep)
-  }
+  foreign split(sep)
 
-  substring(start, end) {
-    return __STRING_SUBSTRING(this.value, start, end)
-  }
+  foreign substring(start, end)
 
   toString() {
     return this.value

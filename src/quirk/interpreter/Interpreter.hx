@@ -27,7 +27,7 @@ class Interpreter
   private var modules:Map<String, Module> = new Map();
   private var loader:ModuleLoader;
   private var locals:Map<Expr, Int> = new Map();
-  private var foreigns:Map<Foreign.Signature, Foreign> = new Map();
+  private var foreigns:Map<String, Foreign.ForeignMethod> = new Map();
   private var objectMappings:Map<String, String> = [
     'String' => 'String'
   ];
@@ -45,7 +45,8 @@ class Interpreter
     currentModule = new Module(null, globals, []);
 
     // Setup default types
-    quirk.interpreter.foreign.CoreTypes.addCoreTypes(this);
+    quirk.interpreter.foreign.Primitives.register(this);
+    quirk.interpreter.foreign.Core.register(this);
   }
 
   public function interpret(stmts:Array<Stmt>) {
@@ -62,8 +63,23 @@ class Interpreter
     locals.set(expr, depth);
   }
 
-  public function addForeign(foreign:Foreign) {
-    foreigns.set(foreign.signature, foreign);
+  /**
+    Add a foreign method.
+
+    Static methods: `Module.Path.ClassName.staticMethod(_, _)`
+    Instance methods: `Module.Path.ClassName#instanceMethod(_, _)`
+  **/
+  public function addForeign(signature:String, foreign:Foreign.ForeignMethod) {
+    foreigns.set(signature, foreign);
+    return this;
+  }
+
+  public function getForeign(signature:String):Foreign.ForeignMethod {
+    var f = foreigns.get(signature);
+    if (f == null) {
+      throw 'No foreign method registered for ' + signature;
+    }
+    return f;
   }
 
   private function execute(stmt:Stmt) {
@@ -129,26 +145,37 @@ class Interpreter
       environment.define('super', superclass);
     }
 
+    var className:String = [ currentModule.toString(), stmt.name.lexeme ]
+      .filter(function (name) return name != null)
+      .join('.');
     var meta:Map<String, Array<Dynamic>> = intrepretMetadata(stmt.meta);
     var methods:Map<String, Function> = new Map();
     var staticMethods:Map<String, Function> = new Map();
 
     for (method in stmt.methods) {
       var funMeta = intrepretMetadata(method.meta);
+      if (method.kind.equals(Stmt.FunKind.FunForeign)) {
+        var sig = className + '#' + method.signature();
+        methods.set(method.getMethodName(), new Foreign(method, environment, funMeta, getForeign(sig)));
+        continue;
+      }
       var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta); 
       methods.set(method.getMethodName(), fun);
     }
 
     for (method in stmt.staticMethods) {
       var funMeta = intrepretMetadata(method.meta);
+      if (method.kind.equals(Stmt.FunKind.FunForeign)) {
+        var sig = className + '.' + method.signature();
+        staticMethods.set(method.getMethodName(), new Foreign(method, environment, funMeta, getForeign(sig)));
+        continue;
+      }
       var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
       staticMethods.set(method.getMethodName(), fun);
     }
 
     var cls = new Class(
-      [ currentModule.toString(), stmt.name.lexeme ]
-        .filter(function (name) return name != null)
-        .join('.'),
+      className,
       (cast superclass),
       methods,
       staticMethods,

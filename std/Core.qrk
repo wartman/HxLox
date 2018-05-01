@@ -2,37 +2,35 @@ module Std.Core for System, Reflect, Meta
 
 class System {
 
-  static print(s) {
-    __SYSTEM_PRINT(s)
-  }
+  foreign static print(s)
+
+  foreign static getCwd()
 
   static println(s) {
-    __SYSTEM_PRINT_LN(s)
-  }
-
-  static getModule() {
-    return __SYSTEM_GET_MODULE()
-  }
-
-  static getCwd() {
-    return __SYSTEM_GET_CWD()
+    this.print(s + '\n')
   }
 
 }
 
 class Reflect {
 
-  static getClass(target) {
-    return __REFLECT_TYPE(target)
-  }
+  foreign static getClass(target)
 
-  static getClassName(target) {
-    return __REFLECT_TYPE_NAME(target)
-  }
+  foreign static getClassName(target)
 
-  static getSuperclass(target) {
-    return __REFLECT_GET_SUPERCLASS(target)
-  }
+  foreign static getSuperclass(target)
+
+  foreign static getMethod(target, name)
+
+  foreign static getMethodNames(target)
+
+  foreign static getField(target, name)
+
+  foreign static getFieldNames(target)
+
+  foreign static getField(target, name)
+
+  foreign static __getMetadata(target)
 
   static is(a, b) {
     var passing = this.getClassName(a) == this.getClassName(b)
@@ -44,37 +42,18 @@ class Reflect {
     return passing
   }
 
-  static getMethod(target, name) {
-    return __REFLECT_GET_METHOD(target, name)
-  }
-
-  static getMethodNames(target) {
-    return __REFLECT_GET_METHOD_NAMES(target)
-  }
-
-  static getField(target, name) {
-    return __REFLECT_GET_FIELD(target, name)
-  }
-
-  static getFieldNames(target) {
-    return __REFLECT_GET_FIELD_NAMES(target)
-  }
-
-  static getField(target, name) {
-    return __REFLECT_GET_FIELD(target, name)
-  }
-
 }
 
 class Meta {
   
   static getFields(target) {
     var fields = {}
-    fields.__TYPE__ = __REFLECT_GET_METADATA(__REFLECT_TYPE(target))
+    fields.__TYPE__ = Reflect.__getMetadata(Reflect.getClass(target))
     Reflect.getMethodNames(target).forEach {
       var method = Reflect.getMethod(target, it)
-      fields[it] = __REFLECT_GET_METADATA(method)
+      fields[it] = Reflect.__getMetadata(method)
     }
+    // todo: need to merge with superclass
     return fields
   }
   

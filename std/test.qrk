@@ -24,10 +24,7 @@ class Runner {
 
   run() {
     this.result = Result()
-    for (var i = 0; i < this.cases.length; i = i + 1) {
-      var c = this.cases[i]
-      this.runCase(c)
-    }
+    this.cases.forEach { this.runCase(it) }
     this.print(this.result.toString())
     return this.result.wasSuccessful()
   }

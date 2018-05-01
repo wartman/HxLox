@@ -1,0 +1,73 @@
+module Std.Build for Project, Target, project
+
+import Std.Core for System, Reflect
+import Std.Quirk for Builder, Interpreter
+
+enum Target {
+  Js
+  Php
+  Interpret
+}
+
+class Project {
+  
+  static run(p) {
+    if (p.settings.sub.length > 0) {
+      p.settings.sub.forEach { Project.run(it) }
+      return
+    }
+    switch (p.settings.target) {
+      
+      case (Target.Js) {
+        Builder.buildJS(p.settings)
+      }
+
+      case (Target.Interpret) {
+        Interpreter.run(p.settings.src, p.settings.main)
+      }
+
+    }
+  }
+
+  init(settings) {
+    if (settings == null) {
+      settings = {
+        root: System.getCwd(),
+        target: Target.Interpret,
+        src: 'src',
+        main: null
+        targets: []
+      }
+    }
+  }
+
+  name = value {
+    this.settings.name = value
+  }
+
+  src = value {
+    this.settings.src = value
+  }
+
+  dst = value {
+    this.settings.dst = value
+  }
+
+  target = value {
+    this.settings.target = value
+  }
+
+  /// Add a sub-target
+  sub(cb) {
+    var p = Project(this.settings)
+    cb(p)
+    this.settings.targets.push(p)
+  }
+
+}
+
+fun project(cb) {
+  var p = Project(null)
+  cb(p)
+  Project.run(p)
+}

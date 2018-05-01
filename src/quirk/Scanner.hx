@@ -25,6 +25,8 @@ class Scanner {
     "static" => TokStatic,
     "throw" => TokThrow,
     "try" => TokTry,
+    "enum" => TokEnum,
+    "foreign" => TokForeign,
     "catch" => TokCatch
   ];
 

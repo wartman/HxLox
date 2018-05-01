@@ -4,9 +4,9 @@ import quirk.Stmt.Fun;
 
 class Function implements Callable {
 
-  private var closure:Environment;
   private var isInitializer:Bool;
   private var isLambda:Bool;
+  @:isVar public var closure(default, null):Environment;
   @:isVar public var declaration(default, null):Fun;
   @:isVar public var meta(default, null):Map<String, Array<Dynamic>>;
 

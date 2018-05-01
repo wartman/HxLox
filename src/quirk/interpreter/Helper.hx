@@ -21,4 +21,9 @@ class Helper {
     }
   }
 
+  public static function signature(sig:Stmt.Fun) {
+    var args = [ for (i in 0...sig.params.length) '_' ].join(',');
+    return sig.name.lexeme + '(' + args + ')';
+  }
+
 }

@@ -66,6 +66,7 @@ enum FunKind {
   FunMethod;
   FunGetter;
   FunSetter;
+  FunForeign;
   FunConstructor;
 }
 

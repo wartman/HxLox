@@ -26,6 +26,8 @@ enum TokenType {
 
   // Keywords
   TokClass;
+  TokEnum;
+  TokForeign;
   TokStatic;
   TokFalse;
   TokElse;

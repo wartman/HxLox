@@ -29,6 +29,7 @@ class Parser {
       if (match([ TokAt ])) return declaration(parseMeta());
       if (match([ TokVar ])) return varDeclaration(meta);
       if (match([ TokFun ])) return functionDeclaration(Stmt.FunKind.FunFun, meta);
+      if (match([ TokEnum ])) return enumDeclaration(meta);
       if (match([ TokClass ])) return classDeclaration(meta);
       if (match([ TokImport ])) return importDeclaration(meta);
       if (match([ TokModule ])) return moduleDeclaration(meta);
@@ -89,6 +90,37 @@ class Parser {
     return def;
   }
 
+  private function enumDeclaration(?meta:Array<Expr>):Stmt {
+    if (meta == null) meta = [];
+    var name = consume(TokIdentifier, "Expect an enum name.");
+    var staticMethods:Array<Stmt.Fun> = [];
+    var index = 0;
+
+    consume(TokLeftBrace, "Expect '{' before enum body.");
+
+    ignoreNewlines();
+    while (!check(TokRightBrace) && !isAtEnd()) {
+      var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
+      var cname = consume(TokIdentifier, 'Expect an enum constructor name');
+      var body:Array<Stmt> = [ new Stmt.Return(cname, new Expr.Literal(index)) ];
+      staticMethods.push(new Stmt.Fun(
+        cname,
+        [],
+        body,
+        funMeta,
+        Stmt.FunKind.FunGetter
+      ));
+      index++;
+      ignoreNewlines();
+    }
+
+    ignoreNewlines();
+    consume(TokRightBrace, "Expect '}' after enum body.");
+    ignoreNewlines();
+
+    return new Stmt.Class(name, null, [], staticMethods, meta);
+  }
+
   private function classDeclaration(?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name = consume(TokIdentifier, "Expect a class name.");
@@ -107,7 +139,14 @@ class Parser {
     while(!check(TokRightBrace) && !isAtEnd()) {
       ignoreNewlines();
       var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
-      if (match([ TokStatic ])) {
+
+      if (match([ TokForeign ])) {
+        if (match([ TokStatic ])) {
+          staticMethods.push(foreignFun(funMeta));
+        } else {
+          methods.push(foreignFun(funMeta));
+        }        
+      } else if (match([ TokStatic ])) {
         staticMethods.push(fieldDeclaration(funMeta));
       } else {
         methods.push(fieldDeclaration(funMeta));
@@ -118,6 +157,17 @@ class Parser {
     ignoreNewlines();
 
     return new Stmt.Class(name, superclass, methods, staticMethods, meta);
+  }
+
+  private function foreignFun(meta:Array<Expr>):Stmt.Fun {
+    var name = consume(TokIdentifier, 'Expect an identifier');
+    consume(TokLeftParen, "Expect '(' after method name");
+    var params = functionParams();
+    if (match([ TokLeftBrace ])) {
+      error(previous(), 'Foreign methods cannot have a method body');
+    }
+    ignoreNewlines();
+    return new Stmt.Fun(name, params, [], meta, Stmt.FunKind.FunForeign);
   }
 
   private function fieldDeclaration(meta:Array<Expr>):Stmt.Fun {

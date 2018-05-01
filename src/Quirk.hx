@@ -25,7 +25,6 @@ class Quirk {
     var args = Sys.args();
     if (args.length > 1) {
       if (args[0] == 'gen') {
-        trace(args);
         if (args.length != 4) {
           throw 'Usage: gen [kind] [src] [dst]';
         }

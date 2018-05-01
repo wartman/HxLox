@@ -1,0 +1,23 @@
+import Std.Build for Target, project
+import Std.Cli as Cli
+
+project {
+
+  it.name = 'Test'
+  it.src = 'test'
+  it.main = 'Test.Main'
+
+  it.sub {
+    it.target = Target.Js
+    it.dst = 'bin/js/test.js'
+    it.bundle = true
+    it.after {
+      Cli.execute('node ./bin/js/test.js')
+    }
+  }
+
+  it.sub {
+    it.target = Target.Interpret
+  }
+
+}

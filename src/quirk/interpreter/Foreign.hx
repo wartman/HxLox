@@ -1,29 +1,35 @@
 package quirk.interpreter;
 
-typedef Signature = {
-  ?type:String,
-  method:String,
-  arity:Int
-};
+import quirk.Stmt.Fun;
 
-class Foreign implements Callable {
+typedef ForeignMethod = Array<Dynamic>->Null<Function>->Dynamic;
 
-  public var signature(default, null):Signature;
-  private var fn:Array<Dynamic>->Dynamic;
+class Foreign extends Function {
 
-  public function new(signature:Signature, fn:Array<Dynamic>->Dynamic) {
-    this.signature = signature;
-    this.fn = fn;
+  private var foreignFun:ForeignMethod;
+
+  public function new(
+    declaration:Fun,
+    closure:Environment,
+    meta:Map<String, Array<Dynamic>>,
+    foreignFun:ForeignMethod
+  ) {
+    super(declaration, closure, false, meta, false);
+    this.foreignFun = foreignFun;
   }
 
-  public function call(interpreter:Interpreter, arguments:Array<Dynamic>):Dynamic {
-    return fn(arguments);
+  override public function bind(instance:Object) {
+    var environment = new Environment(closure);
+    environment.define('this', instance);
+    return new Foreign(declaration, environment, meta, foreignFun);
   }
 
-  public function isDynamic() return false;
+  override public function call(interpreter:Interpreter, arguments:Array<Dynamic>):Dynamic {
+    return foreignFun(arguments, this);
+  }
 
-  public function arity():Int {
-    return this.signature.arity;
+  override public function toString() {
+    return 'foreign ' + super.toString();
   }
 
 }

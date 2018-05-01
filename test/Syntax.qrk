@@ -1,7 +1,29 @@
-module Test.Syntax for MethodTest
+module Test.Syntax for EnumTest, MethodTest
 
-import Std.Core for System
+import Std.Core for Reflect
 import Std.Test for Case
+
+enum EnumFixture {
+  Foo
+  Bar
+}
+
+class EnumTest : Case {
+  
+  @test('Enum values are the same type as the parent Enum')
+  checkEnumType() {
+    var e = EnumFixture.Foo
+    this.assertEquals(Reflect.getClassName(e), Reflect.getClassName(EnumFixture))
+  }
+
+  @test('Comparison')
+  testComparison() {
+    var e = EnumFixture.Foo
+    this.assertTrue(e == EnumFixture.Foo)
+    this.assertFalse(e == EnumFixture.Bar)
+  }
+
+}
 
 class MethodTypes {
   
