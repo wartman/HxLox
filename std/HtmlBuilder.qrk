@@ -4,7 +4,7 @@ import Std.Core for Reflect
 
 class HtmlBuilder {
   
-  init() {
+  construct new() {
     this.nodes = []
   }
   
@@ -12,7 +12,7 @@ class HtmlBuilder {
     var text = null
     var children = []
     if (body != null) {
-      var builder = HtmlBuilder()
+      var builder = HtmlBuilder.new()
       text = body(builder)
       children = builder.nodes
       if (text != null) {
@@ -99,7 +99,7 @@ fun htmlEscape(str) {
 }
 
 fun html(body) {
-  var builder = HtmlBuilder()
+  var builder = HtmlBuilder.new()
   body(builder)
   return builder
 }

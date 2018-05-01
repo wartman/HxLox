@@ -3,7 +3,7 @@ package quirk.interpreter;
 enum FunctionType {
   FunNone;
   FunFunction;
-  FunInitializer;
+  FunConstructor;
   FunMethod;
   FunLambda;
 }

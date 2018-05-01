@@ -27,6 +27,7 @@ class Scanner {
     "try" => TokTry,
     "enum" => TokEnum,
     "foreign" => TokForeign,
+    "construct" => TokConstruct,
     "catch" => TokCatch
   ];
 

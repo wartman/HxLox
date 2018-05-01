@@ -52,7 +52,7 @@ class Resolver
     if (currentFunction.equals(FunNone)) {
       error(stmt.keyword, "Cannot return from top-level code.");
     }
-    if (currentFunction.equals(FunInitializer)) {
+    if (currentFunction.equals(FunConstructor)) {
       error(stmt.keyword, "Cannot return a value from an initializer");
     }
     if (stmt.value != null) {
@@ -132,7 +132,7 @@ class Resolver
 
   public function visitSuperExpr(expr:Expr.Super):Void {
     if (currentClass.equals(ClsNone)) {
-      error(expr.keyword,  "Cannot use 'super' outside of a class.");
+      error(expr.keyword, "Cannot use 'super' outside of a class.");
     } else if (!currentClass.equals(ClsSubClass)) {
       error(expr.keyword, "Cannot use 'super' in a class with no superclass.");
     }
@@ -175,8 +175,19 @@ class Resolver
     scopes[scopes.length - 1].set('this', true);
     for (method in stmt.methods) {
       var type = FunMethod;
-      if (method.name.lexeme == 'init') {
-        type = FunInitializer;
+      if (method.kind.equals(quirk.Stmt.FunKind.FunConstructor)) {
+        type = FunConstructor;
+      }
+      resolveFunction(method, type);
+    }
+    endScope();
+
+    beginScope();
+    scopes[scopes.length - 1].set('this', true);
+    for (method in stmt.staticMethods) {
+      var type = FunMethod;
+      if (method.kind.equals(quirk.Stmt.FunKind.FunConstructor)) {
+        type = FunConstructor;
       }
       resolveFunction(method, type);
     }

@@ -8,14 +8,16 @@ class Exception {
 
 class Array {
 
-  init(values) {
-    this.values = values
+  construct new(values) {
+    this.values = values;
   }
 
   length {
     return this.__length() 
   }
 
+  // We don't allow foreign properties -- at least not yet
+  // -- so we're using this awkward workaround.
   foreign __length()
 
   foreign __offsetGet(i)
@@ -48,7 +50,7 @@ class Array {
   }
 
   forEach(cb) {
-    for (var i = 0; i < this.__length(); i = i + 1) {
+    for (var i = 0; i < this.length; i = i + 1) {
       cb(this[i])
     }
   }
@@ -73,7 +75,7 @@ class Object {
 
 class String {
 
-  init(value) {
+  construct new(value) {
     this.value = value
   }
 
@@ -91,7 +93,7 @@ class String {
 
 class RegEx {
   
-  new(pattern, flags) {
+  construct new(pattern, flags) {
     this.pattern = pattern
     this.flags = flags
   }

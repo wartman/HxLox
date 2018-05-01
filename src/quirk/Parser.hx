@@ -145,7 +145,9 @@ class Parser {
           staticMethods.push(foreignFun(funMeta));
         } else {
           methods.push(foreignFun(funMeta));
-        }        
+        }
+      } else if (match([ TokConstruct ])) {
+        staticMethods.push(constructorFun(funMeta));
       } else if (match([ TokStatic ])) {
         staticMethods.push(fieldDeclaration(funMeta));
       } else {
@@ -168,6 +170,16 @@ class Parser {
     }
     ignoreNewlines();
     return new Stmt.Fun(name, params, [], meta, Stmt.FunKind.FunForeign);
+  }
+
+  private function constructorFun(meta:Array<Expr>):Stmt.Fun {
+    var name = consume(TokIdentifier, 'Expect an identifier');
+    consume(TokLeftParen, "Expect '(' after method name");
+    var params = functionParams();
+    consume(TokLeftBrace, "Expect '{' after argument list");
+    var fun = new Stmt.Fun(name, params, block(), meta, Stmt.FunKind.FunConstructor);
+    ignoreNewlines();
+    return fun;
   }
 
   private function fieldDeclaration(meta:Array<Expr>):Stmt.Fun {

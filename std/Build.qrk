@@ -1,7 +1,6 @@
 module Std.Build for Project, Target, project
 
 import Std.Core for System, Reflect
-import Std.Quirk for Builder, Interpreter
 
 enum Target {
   Js
@@ -16,28 +15,31 @@ class Project {
       p.settings.sub.forEach { Project.run(it) }
       return
     }
-    switch (p.settings.target) {
-      
-      case (Target.Js) {
-        Builder.buildJS(p.settings)
-      }
-
-      case (Target.Interpret) {
-        Interpreter.run(p.settings.src, p.settings.main)
-      }
-
+    
+    if (p.settings.target == Target.Js) { 
+      this.buildJS(p.settings)
+    } else {
+      this.interpret(p.settings)
     }
   }
 
-  init(settings) {
-    if (settings == null) {
-      settings = {
-        root: System.getCwd(),
-        target: Target.Interpret,
-        src: 'src',
-        main: null
-        targets: []
-      }
+  foreign static buildJs(settings)
+
+  foreign static buildPhp(settings)
+
+  foreign static interpret(settings)
+
+  construct new(settings) {
+    this.settings = settings
+  }
+
+  construct default() {
+    this.settings = {
+      root: System.getCwd(),
+      target: Target.Interpret,
+      src: 'src',
+      main: null
+      targets: []
     }
   }
 
@@ -59,7 +61,7 @@ class Project {
 
   /// Add a sub-target
   sub(cb) {
-    var p = Project(this.settings)
+    var p = Project.new(this.settings)
     cb(p)
     this.settings.targets.push(p)
   }
@@ -67,7 +69,7 @@ class Project {
 }
 
 fun project(cb) {
-  var p = Project(null)
+  var p = Project.default()
   cb(p)
   Project.run(p)
 }

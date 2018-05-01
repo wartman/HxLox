@@ -29,6 +29,7 @@ enum TokenType {
   TokEnum;
   TokForeign;
   TokStatic;
+  TokConstruct;
   TokFalse;
   TokElse;
   TokFun;

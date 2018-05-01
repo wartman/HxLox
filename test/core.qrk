@@ -5,6 +5,10 @@ import Std.Test for Case
 
 class ReflectTest : Case {
 
+  construct new() {
+    super.new()
+  }
+  
   @test('Gets the correct type name')
   testGetType() {
     this.assertEquals(Reflect.getClassName(ReflectTest), 'Test.Core.ReflectTest');

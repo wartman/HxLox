@@ -5,6 +5,10 @@ import Std.HtmlBuilder for html
 
 class HtmlBuilderTest : Case {
   
+  construct new() {
+    super.new()
+  }
+
   @test('Generates html')
   testGen() {
     var builder = html {

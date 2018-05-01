@@ -26,4 +26,17 @@ class Helper {
     return sig.name.lexeme + '(' + args + ')';
   }
 
+  public static function construct(
+    cls:quirk.interpreter.Class,
+    constructor:String,
+    interpreter:Interpreter,
+    args:Array<Dynamic>
+  ) {
+    var method = cls.findMethod(cls, constructor);
+    if (method == null) {
+      throw 'No constructor found for ' + cls.name + '::' + constructor;
+    }
+    return method.call(interpreter, args);
+  }
+
 }

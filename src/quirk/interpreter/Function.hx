@@ -4,7 +4,7 @@ import quirk.Stmt.Fun;
 
 class Function implements Callable {
 
-  private var isInitializer:Bool;
+  private var isConstructor:Bool;
   private var isLambda:Bool;
   @:isVar public var closure(default, null):Environment;
   @:isVar public var declaration(default, null):Fun;
@@ -13,13 +13,13 @@ class Function implements Callable {
   public function new(
     declaration:Fun,
     closure:Environment,
-    isInitializer:Bool,
+    isConstructor:Bool,
     meta:Map<String, Array<Dynamic>>,
     isLambda:Bool = false
   ) {
     this.declaration = declaration;
     this.closure = closure;
-    this.isInitializer = isInitializer;
+    this.isConstructor = isConstructor;
     this.isLambda = isLambda;
     this.meta = meta;
   }
@@ -27,7 +27,7 @@ class Function implements Callable {
   public function bind(instance:Object) {
     var environment = new Environment(closure);
     environment.define('this', instance);
-    return new Function(declaration, environment, isInitializer, meta, isLambda);
+    return new Function(declaration, environment, isConstructor, meta, isLambda);
   }
 
   public function isDynamic():Bool {
@@ -46,9 +46,13 @@ class Function implements Callable {
     try {
       interpreter.executeBlock(declaration.body, environment);
     } catch (returnValue:Return) {
-      return returnValue.value;
+      if (!isConstructor) {
+        return returnValue.value;
+      } else {
+        throw 'Constructors cannot return a value';
+      }
     }
-    if (isInitializer) return closure.getAt(0, "this");
+    if (isConstructor) return closure.getAt(0, "this");
     return null;
   }
 

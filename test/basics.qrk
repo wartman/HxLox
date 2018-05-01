@@ -5,6 +5,10 @@ import Std.Test for Case
 
 class ArrayTest : Case {
 
+  construct new() {
+    super.new()
+  }
+
   @test('Ensure push works')
   testPush() {
     var arr = [ 1, 2, 3 ]
@@ -61,6 +65,10 @@ class ArrayTest : Case {
 
 class ObjectTest : Case {
 
+  construct new() {
+    super.new()
+  }
+  
   @test('Create works')
   testCreate() {
     var obj = {
@@ -103,6 +111,10 @@ class ObjectTest : Case {
 
 class StringTest : Case {
 
+  construct new() {
+    super.new()
+  }
+  
   @test('Split works')
   testSplit() {
     var arr = 'a,b'.split(',')
@@ -130,6 +142,10 @@ class StringTest : Case {
 }
 
 class LambdaTest : Case {
+  
+  construct new() {
+    super.new()
+  }
   
   @test('Short declaration with no args')
   testShortNoArgs() {

@@ -1,6 +1,8 @@
 package quirk.interpreter;
 
-class Class extends Instance implements Callable {
+import quirk.Stmt.FunKind;
+
+class Class extends Instance {
 
   public var name:String;
   public var superclass:Class;
@@ -23,24 +25,7 @@ class Class extends Instance implements Callable {
     super(this);
   }
 
-  public function arity():Int {
-    var initializer = methods.get("init");
-    if (initializer == null) return 0;
-    return initializer.arity();
-  }
-
-  public function isDynamic():Bool return false;
-
-  public function call(interpreter:Interpreter, args:Array<Dynamic>):Dynamic {
-    var instance = new Instance(this);
-    var initializer = methods.get('init');
-    if (initializer != null) {
-      initializer.bind(instance).call(interpreter, args);
-    }
-    return instance;
-  }
-
-  public function findMethod(instance:Instance, name:String) {
+  public function findMethod(instance:Instance, name:String):Callable {
     var methods = instance == this ? this.staticMethods : this.methods;
     if (methods.exists(name)) {
       return methods.get(name).bind(instance);

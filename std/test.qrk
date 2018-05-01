@@ -8,8 +8,8 @@ import Std.Core for System, Reflect, Meta
 
 class Runner {
 
-  init() {
-    this.result = Result()
+  construct new() {
+    this.result = Result.new()
     this.cases = []
   }
 
@@ -23,7 +23,7 @@ class Runner {
   }
 
   run() {
-    this.result = Result()
+    this.result = Result.new()
     this.cases.forEach { this.runCase(it) }
     this.print(this.result.toString())
     return this.result.wasSuccessful()
@@ -48,7 +48,7 @@ class Runner {
           label = testInfo.join('\n')
         }
 
-        c.currentTest = Status(className, methodName)
+        c.currentTest = Status.new(className, methodName)
         before.forEach { it() }
 
         try {
@@ -101,7 +101,7 @@ class Runner {
 
 class Result {
 
-  init() {
+  construct new() {
     this.tests = []
     this.failures = 0
     this.success = true
@@ -146,7 +146,7 @@ class Result {
 
 class Status {
 
-  init(className, methodName) {
+  construct new(className, methodName) {
     this.className = className
     this.methodName = methodName
     this.success = false
@@ -166,8 +166,8 @@ class Status {
 
 class Case {
 
-  init() {
-    this.currentTest = Status(Reflect.getClassName(this), null)
+  construct new() {
+    this.currentTest = Status.new(Reflect.getClassName(this), null)
   }
 
   assertTrue(value) {

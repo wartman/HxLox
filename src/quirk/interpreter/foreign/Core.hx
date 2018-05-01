@@ -3,6 +3,7 @@ package quirk.interpreter.foreign;
 import quirk.interpreter.Interpreter;
 
 using StringTools;
+using quirk.interpreter.Helper;
 
 class Core {
 
@@ -78,7 +79,7 @@ class Core {
         for (name in target.fields.keys()) {
           names.push(name);
         }
-        var arr:Instance = arrCls.call(interpreter, [ names ]);
+        var arr:Instance = arrCls.construct('new', interpreter, [ names ]);
         return arr;
       })
       .addForeign('Std.Core.Reflect.getMethod(_,_)', function (args, f) {
@@ -98,7 +99,7 @@ class Core {
         for (name in target.methods.keys()) {
           names.push(name);
         }
-        var arr:Instance = arrCls.call(interpreter, [ names ]);
+        var arr:Instance = arrCls.construct('new', interpreter, [ names ]);
         return arr;
       })
       .addForeign('Std.Core.Reflect.__getMetadata(_)', function (args, f) {
@@ -113,7 +114,7 @@ class Core {
           for (key in cls.meta.keys()) {
             var inst = new Instance(obj);
             inst.fields.set('name', key);
-            inst.fields.set('values', arr.call(interpreter, [ cls.meta.get(key) ]));
+            inst.fields.set('values', arr.construct('new', interpreter, [ cls.meta.get(key) ]));
             out.push(inst);
           }
         } else if (Std.is(target, quirk.interpreter.Function)) {
@@ -121,11 +122,11 @@ class Core {
           for (key in f.meta.keys()) {
             var inst = new Instance(obj);
             inst.fields.set('name', key);
-            inst.fields.set('values', arr.call(interpreter, [ f.meta.get(key) ]));
+            inst.fields.set('values', arr.construct('new', interpreter, [ f.meta.get(key) ]));
             out.push(inst);
           }
         }
-        return arr.call(interpreter, [ out ]);
+        return arr.construct('new', interpreter, [ out ]);
       });
   }
 

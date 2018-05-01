@@ -1,7 +1,9 @@
 -main Quirk
 -cp src
 
--resource std/Primitives.qrk@primitives
+-resource std/_primitives.qrk@primitives
+-resource std/Js/_primitives.qrk@js:primitives
+-resource std/Js/_prelude.qrk@js:prelude
 -resource lib/js-lib.js@lib:js
 -resource lib/js-minimal-cjs.js@lib:js-cjs
 

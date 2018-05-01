@@ -21,6 +21,10 @@ class JsGenerator
   implements StmtVisitor<String>
 {
 
+  private static var reserved:Array<String> = [
+    'new', 'default'
+  ];
+
   private var reporter:ErrorReporter;
   private var loader:ModuleLoader;
   private var uid:Int = 0;
@@ -133,7 +137,7 @@ class JsGenerator
   }
 
   public function visitVarStmt(stmt:Stmt.Var):String {
-    return getIndent() + 'var ' + stmt.name.lexeme + ' = '
+    return getIndent() + 'var ' + safeVar(stmt.name) + ' = '
       + (stmt.initializer != null ? generateExpr(stmt.initializer) : 'null')
       + ';';
   }
@@ -190,13 +194,8 @@ class JsGenerator
   }
 
   public function visitFunStmt(stmt:Stmt.Fun):String {
-    var out = 'function ' + stmt.name.lexeme + '('
-      + stmt.params.map(function (t) return t.lexeme).join(', ') + ') '
-      + '{\n';
-    indent(); 
-    out += stmt.body.map(generateStmt).join('\n'); 
-    outdent();
-    return out + '\n' + getIndent() + '}';
+    return 'function ' + safeVar(stmt.name) + genParams(stmt.params) + ' ' 
+      + genBlock(stmt.body);
   }
 
   public function visitClassStmt(stmt:Stmt.Class):String {
@@ -210,37 +209,12 @@ class JsGenerator
       ?getter:String,
       ?setter:String 
     }> = new Map();
-    var init = stmt.methods.find(function (m) {
-      return m.name.lexeme == 'init';
-    });
 
     if (stmt.meta.length > 0) {
       metaList.set('__TYPE__', stmt.meta);
     }
     
-    // Getting around the fact that we don't use the `new` keyword.
-    // Feels like this could be a bit of an issue, so... I dunno. might
-    // come back later and make real JS constructors.
-    var initParams = init != null 
-      ? init.params.map(function (t) return t.lexeme).join(', ')
-      : '';  
-    out += getIndent() + 'function ' + name + '(' + initParams + ') {\n';
-    indent();
-    var inst = tempVar('obj');
-    out += getIndent() + 'var ' + inst + ' = Object.create(' + name + '.prototype);\n';
-    if (init != null) {
-      out += getIndent() + inst + '.' + init.name.lexeme + '(' + initParams + ');\n';
-    }
-    out += getIndent() + 'return ' + inst + ';\n';
-    outdent();
-    out += getIndent() + '};\n';
-
-    // if (init != null) {
-    //   init.name = stmt.name;
-    //   out += visitFunStmt(init) + ';\n';
-    // } else {
-    //   out += 'function ' + name + '() {};\n';
-    // }
+    out += getIndent() + 'function ' + name + '() {};\n';
 
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
@@ -313,7 +287,22 @@ class JsGenerator
         indent();
         propertyList.get(ident).setter = visitFunStmt(method);
         outdent();
-        null; 
+        null;
+      case Stmt.FunKind.FunConstructor:
+        target + '.' + method.name.lexeme + ' = function ' + genParams(method.params) + '{\n' 
+          + indent().getIndent() + 'var instance = new ' + target + '();\n'
+          + getIndent() + 'instance.' + method.name.lexeme + genParams(method.params) + ';\n'
+          + getIndent() + 'return instance;\n'
+          + outdent().getIndent() + '}\n'
+        + getIndent() + target + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
+
+        // // probably won't handle super calls tho
+        // target + '.' + method.name.lexeme + ' = function ' + genParams(method.params)
+        //   + ' {\n' + [
+        //     indent().getIndent() + 'var instance = new ' + target + '();',
+        //     getIndent() + '(function () ' + genBlock(method.body) + ').call(instance);',
+        //     getIndent() +'return instance;'
+        //   ].join('\n') + '\n' + outdent().getIndent() + '}';
       default: target + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }
   }
@@ -362,7 +351,7 @@ class JsGenerator
   }
 
   public function visitVariableExpr(expr:Expr.Variable):String {
-    return expr.name.lexeme;
+    return safeVar(expr.name);
   }
 
   public function visitMetadataExpr(expr:Expr.Metadata):String {
@@ -391,6 +380,26 @@ class JsGenerator
     out += pairs.join(',\n') + '\n';
     outdent();
     return out + getIndent() + '}';
+  }
+
+  private function genBlock(stmts:Array<Stmt>) {
+    var out = '{\n';
+    indent();
+    out += stmts.map(generateStmt).join('\n'); 
+    outdent();
+    return out + '\n' + getIndent() + '}';
+  }
+
+  private function genParams(params:Array<Token>) {
+    return '(' + params.map(function (t) return t.lexeme).join(', ') + ')';
+  }
+
+  private function safeVar(tok:Token) {
+    var name = tok.lexeme;
+    if (reserved.indexOf(name) >= 0) {
+      return '_' + name;
+    }
+    return name;
   }
 
   private function addMeta(target:String, data:Map<String, Array<Expr>>) {
@@ -442,6 +451,7 @@ class JsGenerator
 
   private function indent() {
     indentLevel++;
+    return this;
   }
 
   private function outdent() {
@@ -449,6 +459,7 @@ class JsGenerator
     if (indentLevel < 0) {
       indentLevel = 0;
     }
+    return this;
   }
 
   private function tempVar(prefix:String = 'tmp') {

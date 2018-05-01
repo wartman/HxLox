@@ -159,7 +159,7 @@ class Interpreter
         methods.set(method.getMethodName(), new Foreign(method, environment, funMeta, getForeign(sig)));
         continue;
       }
-      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta); 
+      var fun = new Function(method, environment, false, funMeta, false); 
       methods.set(method.getMethodName(), fun);
     }
 
@@ -169,8 +169,18 @@ class Interpreter
         var sig = className + '.' + method.signature();
         staticMethods.set(method.getMethodName(), new Foreign(method, environment, funMeta, getForeign(sig)));
         continue;
+      } 
+      if (method.kind.equals(Stmt.FunKind.FunConstructor)) {
+        // Note: we do both of these to allow calling something like `super.new()`
+        // inside a constructor.
+        var con = new Constructor(method, environment, funMeta);
+        var fun = new Function(method, environment, false, funMeta, false);
+        staticMethods.set(method.getMethodName(), con);
+        methods.set(method.getMethodName(), fun);
+        continue;
       }
-      var fun = new Function(method, environment, method.name.lexeme == 'init', funMeta);
+      // Todo: depreciate `init`
+      var fun = new Function(method, environment, false, funMeta, false);
       staticMethods.set(method.getMethodName(), fun);
     }
 
@@ -194,7 +204,7 @@ class Interpreter
     var module = getModule(stmt.path);
     if (stmt.alias != null) {
       var obj:Class = globals.values.get('Object');
-      var mod:Instance = obj.call(this, []);
+      var mod:Instance = new Instance(obj);
       for (name in module.exports) {
         var tok:Token = new Token(TokIdentifier, name, '', stmt.alias.pos);
         mod.set(this, tok, module.get(tok));
@@ -328,7 +338,7 @@ class Interpreter
     var superclass:Class = cast environment.getAt(distance, 'super');
     // "this" is always one level nearer than "super"'s environment.
     var instance:Instance = cast environment.getAt(distance - 1, 'this');
-    var method:Function = superclass.findMethod(instance, expr.method.lexeme);
+    var method:Callable = superclass.findMethod(instance, expr.method.lexeme);
 
     if (method == null) {
       throw new RuntimeError(expr.method, "Undefined property '" + expr.method.lexeme + "'.");
@@ -439,7 +449,7 @@ class Interpreter
     // Sorta a hack :P
     var cls = getLiteralClass(target);
     if (cls != null) {
-      var object:Instance = cls.call(this, [ target ]);
+      var object:Instance = cls.construct('new', this, [ target ]);
       return object.get(this, expr.name);
     }
 
@@ -453,7 +463,7 @@ class Interpreter
 
     if (Std.is(object, Instance)) {
       var obj:Instance = cast object;
-      var method:Function = obj.getClass().findMethod(object, '__offsetGet');
+      var method:Callable = obj.getClass().findMethod(object, '__offsetGet');
       if (method != null) {
         return method.call(this, [ index ]);
       }
@@ -470,7 +480,7 @@ class Interpreter
 
     if (Std.is(object, Instance)) {
       var obj:Instance = cast object;
-      var method:Function = obj.getClass().findMethod(object, '__offsetSet');
+      var method:Callable = obj.getClass().findMethod(object, '__offsetSet');
       if (method != null) {
         return method.call(this, [ index, value ]);
       }
@@ -486,14 +496,14 @@ class Interpreter
       values.push(evaluate(value));
     }
     var arrayClass:Class = globals.values.get('Array');
-    return arrayClass.call(this, [ values ]);
+    return arrayClass.construct('new', this, [ values ]);
   }
 
   public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):Dynamic {
     var keys:Array<String> = [];
     var values:Array<Dynamic> = [];
     var object:Class = globals.values.get('Object');
-    var inst:Instance = object.call(this, []);
+    var inst:Instance = new Instance(object);
     for (i in 0...expr.keys.length) {
       inst.set(this, expr.keys[i], evaluate(expr.values[i]));
     }

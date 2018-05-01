@@ -8,6 +8,7 @@ import quirk.interpreter.Resolver;
 import quirk.interpreter.Function;
 
 using StringTools;
+using quirk.interpreter.Helper;
 
 class Primitives {
 
@@ -53,7 +54,7 @@ class Primitives {
       .addForeign('String#split(_)', function (args, f) {
         var value:String = Std.string(getThis(f).fields.get('value'));
         var array:Class = globals.values.get('Array');
-        return array.call(interpreter, [ value.split(Std.string(args[0])) ]);
+        return array.construct('new', interpreter, [ value.split(Std.string(args[0])) ]);
       })
       .addForeign('String#substring(_,_)', function (args, f) {
         var value:String = Std.string(getThis(f).fields.get('value'));

@@ -3,19 +3,19 @@ module Test.Syntax for EnumTest, MethodTest
 import Std.Core for Reflect
 import Std.Test for Case
 
+// Note: I intend to make enums way more useful later. This
+// is just a super simple starting point.
 enum EnumFixture {
   Foo
   Bar
 }
 
 class EnumTest : Case {
-  
-  @test('Enum values are the same type as the parent Enum')
-  checkEnumType() {
-    var e = EnumFixture.Foo
-    this.assertEquals(Reflect.getClassName(e), Reflect.getClassName(EnumFixture))
-  }
 
+  construct new() {
+    super.new()
+  }
+  
   @test('Comparison')
   testComparison() {
     var e = EnumFixture.Foo
@@ -45,7 +45,7 @@ class MethodTypes {
   // Setter
   bar = value { this.values['bar'] = value }
 
-  init(values) {
+  construct new(values) {
     this.values = values
   }
 
@@ -53,15 +53,15 @@ class MethodTypes {
 
 class MethodTest : Case {
  
-  init() {
-    super.init()
+  construct new() {
+    super.new()
     this.obj = null
   }
 
   @before 
   doBefore() {
     MethodTypes.bar = 'bin'
-    this.obj = MethodTypes({ bar: 'foo' })
+    this.obj = MethodTypes.new({ bar: 'foo' })
   }
 
   @test('Static getter and setter works')
