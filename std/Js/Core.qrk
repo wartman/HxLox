@@ -33,7 +33,7 @@ var _toString = ({}).toString
 class Reflect {
   
   static getClass(target) {
-    return __quirk.classes[this.getClassName(target)]
+    return __quirk.getClass(this.getClassName(target))
   }
 
   static getClassName(target) {
@@ -73,6 +73,19 @@ class Reflect {
     var cls = this.getClass(target)
     if (cls == null) return []
     return Object.getOwnPropertyNames(cls.prototype) 
+  }
+
+  static getConstructor(target, name) {
+    var cls = this.getClass(target)
+    var c = cls[name]
+    if (c && c.bind) {
+      return c.bind(cls)
+    }
+    return c
+  }
+
+  static getConstructorNames(target) {
+    return __quirk.getConstructors(this.getClassName(target))
   }
 
   static getField(target, name) {

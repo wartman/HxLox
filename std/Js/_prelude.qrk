@@ -1,24 +1,191 @@
+/// Helpers used by Quirk to make things work. This must come
+/// before anything else in this file.
+@core
 class __quirk {
+
+  static env {
+    if (this._env == null) {
+      this._env = Environment.new()
+    }
+    return this._env
+  }
+
+  static classes {
+    if (this._classes == null) {
+      this._classes = {}
+    }
+    return this._classes
+  }
+
+  static meta {
+    if (this._meta == null) {
+      this._meta = {}
+    }
+    return this._meta
+  }
   
   static extend(obj, superclass) {
     obj.prototype = Object.create(superclass.prototype)
     return obj
   }
 
-  static addClass(name, cls) {
-    this.classes[name] = cls
+  static addClass(name, cls, constructors) {
+    this.classes[name] = {
+      type: cls,
+      constructors: constructors
+    }
   }
 
   static getClass(name) {
-    return this.classes[name]
+    return this.classes[name].type
+  }
+
+  static getConstructors(name) {
+    return this.classes[name].constructors
   }
 
   static addMeta(target, meta) {
-    target.__quirk_meta = meta
+    this.meta[target.__name] = meta
   }
 
 }
 
-__quirk.classes = []
+/// The Environment class is used to create a lightweight
+/// CJS-like environment.
+@core
+class Environment {
+  
+  construct new() {
+    this.modules = {}
+  }
 
-// Todo: stick CJS stuff in here too?
+  define(name, deps, factory) {
+    var mod = Module.new(this, deps, factory)
+    this.modules[name] = mod
+    return mod
+  }
+  
+  loadModules(deps, next) {
+    var progress = deps.length
+    if (next == null) {
+      next = {
+        return null
+      }
+    }
+
+    // Keep running till progress == 0
+    var onReady = { |err| 
+      if (err) {
+        next(err)
+        return
+      }
+
+      progress = progress - 1
+      if (progress <= 0) {
+        next(null)
+      }
+    }
+    
+    deps.forEach {
+      var mod = this.modules[it]
+      if (mod) {
+        mod.onReady(onReady)
+        mod.enable()
+      } else {
+        onReady('No module found for ' + dep)
+      }
+    }
+  }
+  
+  main(name) {
+    this.loadModules([ name ]) { |err|
+      if (err != null) console.error(err)
+    }
+  }
+
+}
+
+@core
+enum ModuleState {
+  Disabled
+  Pending
+  Enabling
+  Ready
+}
+
+@core
+class Module {
+  
+  construct new(env, deps, factory) {
+    this.env = env
+    this.deps = deps
+    this.factory = {
+      factory({ this.require(it) }, this)
+    }
+    this.state = ModuleState.Pending
+    this.exports = {}
+    this.onReadyListeners = []
+    this.onFailedListeners = []
+  }
+  
+  require(dep) {
+    return this.env.modules[dep].exports
+  }
+  
+  onReady(cb) {
+    if (this.state == ModuleState.Ready) {
+      cb()
+      if (this.onReadyListeners.length > 0) {
+        this.dispatchListeners(this.onReadyListeners)
+      }
+      return this
+    }
+    this.onReadyListeners.push(cb)
+    return this
+  }
+  
+  onFailed (cb) {
+    if (this.state == ModuleState.Disabled) {
+      cb()
+      if (this.onFailedListeners.length > 0) {
+        this.dispatchListeners(this.onFailedListeners)
+      }
+      return this
+    }
+    this.onFailedListeners.push(cb)
+    return this
+  }
+  
+  dispatchListeners(listeners) {
+    var cb
+    while (cb = listeners.pop()) {
+      cb()
+    }
+    return this
+  }
+
+  enable() {
+    if (this.state != ModuleState.Pending) {
+      return this
+    }
+    this.state = ModuleState.Enabling
+    var finish = {
+      this.factory()
+      this.state = ModuleState.Ready
+      this.dispatchListeners(this.onReadyListeners)
+    }
+    if (this.deps.length == 0) {
+      finish()
+    } else {
+      this.env.loadModules(this.deps) { |err|
+        if (err != null) {
+          this.state = ModuleState.Disabled
+          this.dispatchListeners(this.onFailedListeners)
+          return
+        }
+        finish()
+      }
+    }
+  }
+
+}

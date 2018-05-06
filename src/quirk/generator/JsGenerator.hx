@@ -62,24 +62,29 @@ class JsGenerator
           throw 'Expected a module declaration';
         }
       }
-      out = '__quirk_env.define("' + moduleName + '", [' +
+      out = '__quirk.env.define("' + moduleName + '", [' +
         deps.join(',') + '], function (require, module) {\n'
         + out + '\n});\n';
     }
 
-    if (options.bundle == false || options.isMain == true) {
-      out = bundlePrelude() + '\n' + out + '__quirk_init("' + moduleName + '");\n';
+    if (options.isMain == true) {
+      out = ';(function (global) {\n' + bundlePrelude() + '\n' 
+        + out + '__quirk.env.main("' + moduleName + '");\n'
+        + '})(global != null ? global : window);';
     }
 
     return out;
   }
 
   private function bundlePrelude() {
+
     return [
-      ';(function (global) {',
-      haxe.Resource.getString('lib:js-cjs'),
-      haxe.Resource.getString('lib:js'),
-      '})(global != null ? global : window);'
+      builtinModule('js:prelude'),
+      // builtinModule('js:primitives')
+      // ';(function (global) {',
+      // haxe.Resource.getString('lib:js-cjs'),
+      // haxe.Resource.getString('lib:js'),
+      // '})(global != null ? global : window);'
     ].concat([ for (key in modules.keys()) modules.get(key) ]).join('\n');
   }
 
@@ -200,8 +205,11 @@ class JsGenerator
 
   public function visitClassStmt(stmt:Stmt.Class):String {
     var name = stmt.name.lexeme;
-    var fullName = moduleName.replace('/', '.') + '.' + name;
+    var fullName = moduleName == null
+      ? name
+      : moduleName.replace('/', '.') + '.' + name;
     var out = '';
+    var constructors:Array<String> = [];
     var metaList:Map<String, Array<Expr>> = new Map();
     var propertyList:Map<String, { 
       name:String,
@@ -223,9 +231,11 @@ class JsGenerator
 
     out += name + '.__name = "' + fullName + '";\n';
     out += name + '.prototype.__name = "' + fullName + '";\n';
-    out += '__quirk.addClass("' + fullName + '", ' + name + ');\n';
 
     out += stmt.staticMethods.map(function (method) {
+      if (method.kind.equals(Stmt.FunKind.FunConstructor)) {
+        constructors.push(method.name.lexeme);
+      }
       return visitFieldStmt(name, method, propertyList, metaList);
     }).concat(stmt.methods.map(function (method) {
       return visitFieldStmt(name + '.prototype', method, propertyList, metaList);
@@ -242,7 +252,11 @@ class JsGenerator
       outdent();
       'Object.defineProperty(' + prop.target + ', "' + prop.name + '", {\n' 
         + outProps.join(',\n') + '\n' + getIndent() + '})';
-    } ]).join(';\n') + ';';
+    } ]).join(';\n') + ';\n';
+
+    out += '__quirk.addClass("' + fullName + '", ' + name + ', [' + 
+      constructors.map(function (c) return '"' + c + '"').join(', ')
+    + ']);';
 
     addMeta(name, metaList);
 
@@ -295,14 +309,6 @@ class JsGenerator
           + getIndent() + 'return instance;\n'
           + outdent().getIndent() + '}\n'
         + getIndent() + target + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-
-        // // probably won't handle super calls tho
-        // target + '.' + method.name.lexeme + ' = function ' + genParams(method.params)
-        //   + ' {\n' + [
-        //     indent().getIndent() + 'var instance = new ' + target + '();',
-        //     getIndent() + '(function () ' + genBlock(method.body) + ').call(instance);',
-        //     getIndent() +'return instance;'
-        //   ].join('\n') + '\n' + outdent().getIndent() + '}';
       default: target + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }
   }
@@ -403,14 +409,12 @@ class JsGenerator
   }
 
   private function addMeta(target:String, data:Map<String, Array<Expr>>) {
-    var out = '__quirk.addMeta(' + target + ', {\n';
-    indent();
+    var out = '__quirk.addMeta(' + target + ', {';
     out += [ 
       for (key in data.keys()) 
         getIndent() + '"' + key + '": [' + data.get(key).map(generateExpr).join(', ') + ']' 
-    ].join(',\n');
-    outdent();
-    out += '\n' + getIndent() + '});';
+    ].join(', ');
+    out += '});';
     append.push(out);
   }
 
@@ -432,14 +436,16 @@ class JsGenerator
     return generator.generate(stmts);
   }
 
-  // private function standaloneModule(path:String) {
-  //   var stmts = parseModule(path);
-  //   var generator = new JsGenerator(loader, reporter, {
-  //     bundle: false,
-  //     isMain: false
-  //   });
-  //   return generator.generate(stmts);
-  // }
+  private function builtinModule(path:String) {
+    var source = haxe.Resource.getString(path);
+    var tokens = new quirk.Scanner(source, path, reporter).scanTokens();
+    var stmts = new quirk.Parser(tokens, reporter).parse();
+    var generator = new JsGenerator(loader, reporter, {
+      bundle: false,
+      isMain: false
+    });
+    return generator.generate(stmts);
+  }
 
   private function getIndent() {
     var out = '';

@@ -102,6 +102,14 @@ class Core {
         var arr:Instance = arrCls.construct('new', interpreter, [ names ]);
         return arr;
       })
+      .addForeign('Std.Core.Reflect.getConstructor(_,_)', function (args, f) {
+        // todo
+        return null;
+      })
+      .addForeign('Std.Core.Reflect.getConstructorNames(_)', function (args, f) {
+        // todo
+        return null;
+      })
       .addForeign('Std.Core.Reflect.__getMetadata(_)', function (args, f) {
         var target = args[0];
         var arr:Class = globals.values.get('Array');

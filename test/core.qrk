@@ -3,6 +3,18 @@ module Test.Core for ReflectTest
 import Std.Core for Reflect
 import Std.Test for Case
 
+class ReflectFixture {
+  
+  construct new(a) {
+    this.a = a
+  }
+
+  construct defaults() {
+    this.new('a')
+  }
+
+}
+
 class ReflectTest : Case {
 
   construct new() {
@@ -19,6 +31,25 @@ class ReflectTest : Case {
     this.assertTrue(Reflect.is(ReflectTest, ReflectTest));
     this.assertTrue(Reflect.is(ReflectTest, Case));
     this.assertFalse(Reflect.is(ReflectTest, String));
+  }
+
+  @test('Gets constructor names')
+  testGetConstructors() {
+    this.assertEquals(
+      Reflect.getConstructorNames(ReflectFixture).join(','),
+      'new,defaults'
+    ) 
+  }
+
+  @test('Calles constructors correctly')
+  testCallConstructors() {
+    var def = Reflect.getConstructor(ReflectFixture, 'defaults')
+    this.assertEquals(def().a, 'a')
+    this.assertTrue(Reflect.is(def(), ReflectFixture))
+    
+    var nu = Reflect.getConstructor(ReflectFixture, 'new')
+    this.assertEquals(nu('b').a, 'b')
+    this.assertTrue(Reflect.is(nu('b'), ReflectFixture))
   }
 
 }

@@ -24,11 +24,13 @@ class Reflect {
 
   foreign static getMethodNames(target)
 
+  foreign static getConstructor(target, name)
+
+  foreign static getConstructorNames(target)
+
   foreign static getField(target, name)
 
   foreign static getFieldNames(target)
-
-  foreign static getField(target, name)
 
   foreign static __getMetadata(target)
 

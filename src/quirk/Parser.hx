@@ -343,7 +343,7 @@ class Parser {
   private function returnStatement():Stmt {
     var keyword = previous();
     var value:Expr = null;
-    if (!check(TokSemicolon) || !check(TokNewline)) {
+    if (!check(TokSemicolon) && !check(TokNewline)) {
       value = expression();
     }
     expectEndOfStatement();
