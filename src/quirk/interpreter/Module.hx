@@ -1,6 +1,7 @@
 package quirk.interpreter;
 
 import quirk.Token;
+import quirk.core.RuntimeError;
 
 class Module {
 

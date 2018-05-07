@@ -1,0 +1,36 @@
+class __quirk {
+  
+  static classes {
+    if (this._classes == null) {
+      this._classes = {}
+    }
+    return this._classes
+  }
+
+  static meta {
+    if (this._meta == null) {
+      this._meta = {}
+    }
+    return this._meta
+  }
+
+  static addClass(name, cls, constructors) {
+    this.classes[name] = {
+      type: cls,
+      constructors: constructors
+    }
+  }
+
+  static getClass(name) {
+    return this.classes[name].type
+  }
+
+  static getConstructors(name) {
+    return this.classes[name].constructors
+  }
+
+  static addMeta(target, meta) {
+    this.meta[target.__name] = meta
+  }
+
+}

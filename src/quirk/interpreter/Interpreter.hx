@@ -11,6 +11,7 @@ import quirk.ErrorReporter;
 import quirk.DefaultErrorReporter;
 import quirk.ModuleLoader;
 import quirk.DefaultModuleLoader;
+import quirk.core.RuntimeError;
 
 using haxe.io.Path;
 using quirk.interpreter.Helper;
@@ -66,8 +67,8 @@ class Interpreter
   /**
     Add a foreign method.
 
-    Static methods: `Module.Path.ClassName.staticMethod(_, _)`
-    Instance methods: `Module.Path.ClassName#instanceMethod(_, _)`
+    Static methods: `Module.Path.ClassName.staticMethod(_,_)`
+    Instance methods: `Module.Path.ClassName#instanceMethod(_,_)`
   **/
   public function addForeign(signature:String, foreign:Foreign.ForeignMethod) {
     foreigns.set(signature, foreign);

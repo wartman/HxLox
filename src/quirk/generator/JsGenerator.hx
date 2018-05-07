@@ -27,6 +27,7 @@ class JsGenerator
 
   private var reporter:ErrorReporter;
   private var loader:ModuleLoader;
+  private var writer:Writer;
   private var uid:Int = 0;
   private var indentLevel:Int = 0;
   private var append:Array<String> = [];
@@ -37,11 +38,13 @@ class JsGenerator
 
   public function new(
     loader:ModuleLoader,
+    writer:Writer,
     reporter:ErrorReporter,
     ?options:JsGeneratorOptions,
     ?modules:Map<String, String>
   ) {
     this.loader = loader;
+    this.writer = writer;
     this.reporter = reporter;
     this.options = options != null 
       ? options
@@ -55,6 +58,8 @@ class JsGenerator
     }).concat(this.append).join('\n');
     
     if (options.bundle) {
+      // TODO: pull this out and stick it all in the writer.
+      //       that way, we won't even need options
       if (moduleName == null) {
         if (options.isMain) {
           moduleName = 'main';
@@ -67,26 +72,34 @@ class JsGenerator
         + out + '\n});\n';
     }
 
-    if (options.isMain == true) {
-      out = ';(function (global) {\n' + bundlePrelude() + '\n' 
-        + out + '__quirk.env.main("' + moduleName + '");\n'
-        + '})(global != null ? global : window);';
-    }
+    // if (options.isMain == true) {
+    //   out = ';(function (global) {\n' + bundlePrelude() + '\n' 
+    //     + out + '__quirk.env.main("' + moduleName + '");\n'
+    //     + '})(global != null ? global : window);';
+    // }
 
+    if (moduleName != null) modules.set(moduleName, out);
     return out;
   }
 
-  private function bundlePrelude() {
-
-    return [
-      builtinModule('js:prelude'),
-      // builtinModule('js:primitives')
-      // ';(function (global) {',
-      // haxe.Resource.getString('lib:js-cjs'),
-      // haxe.Resource.getString('lib:js'),
-      // '})(global != null ? global : window);'
-    ].concat([ for (key in modules.keys()) modules.get(key) ]).join('\n');
+  public function write() {
+    if (options.isMain == true && options.bundle == true) {
+      modules.set('_prelude', builtinModule('js:prelude'));
+      modules.set('_init', '__quirk.env.main("' + moduleName + '");');
+    }
+    this.writer.write(modules);
   }
+
+  // private function bundlePrelude() {
+  //   return [
+  //     builtinModule('js:prelude'),
+  //     // builtinModule('js:primitives')
+  //     // ';(function (global) {',
+  //     // haxe.Resource.getString('lib:js-cjs'),
+  //     // haxe.Resource.getString('lib:js'),
+  //     // '})(global != null ? global : window);'
+  //   ].concat([ for (key in modules.keys()) modules.get(key) ]).join('\n');
+  // }
 
   private function generateStmt(stmt:Stmt):String {
     return stmt.accept(this);
@@ -327,7 +340,7 @@ class JsGenerator
       this.deps.push(target);
       var loadName = loader.find(stmt.path);
       if (!this.modules.exists(loadName)) {
-        this.modules.set(loadName, bundleModule(loadName));
+        loadModule(loadName);
       }
     }
 
@@ -336,16 +349,13 @@ class JsGenerator
     if (stmt.alias != null) {
       out.push('var ' + stmt.alias.lexeme + ' = ' + tmp);
     }
-    // todo: actually load requirements
     return out.concat(stmt.imports.map(function (t) {
       return 'var ' + t.lexeme + ' = ${tmp}.' + t.lexeme;
     })).join(';\n') + ';';
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
-    if (options.bundle == true) {
-      moduleName = loader.find(stmt.path);
-    }
+    moduleName = loader.find(stmt.path);
     append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
     }).join(', ') + '};');
@@ -427,9 +437,9 @@ class JsGenerator
     return stmts;
   }
 
-  private function bundleModule(path:String) {
+  private function loadModule(path:String) {
     var stmts = parseModule(path);
-    var generator = new JsGenerator(loader, reporter, {
+    var generator = new JsGenerator(loader, writer, reporter, {
       bundle: true,
       isMain: false
     }, modules);
@@ -440,7 +450,7 @@ class JsGenerator
     var source = haxe.Resource.getString(path);
     var tokens = new quirk.Scanner(source, path, reporter).scanTokens();
     var stmts = new quirk.Parser(tokens, reporter).parse();
-    var generator = new JsGenerator(loader, reporter, {
+    var generator = new JsGenerator(loader, writer, reporter, {
       bundle: false,
       isMain: false
     });

@@ -1,0 +1,13 @@
+class Std.Core for Reflect, System, Meta
+
+// Required to trick the compiler into handling
+// functions correctly?
+import __php for print
+
+class System {
+  
+  static args() {
+
+  }
+
+}

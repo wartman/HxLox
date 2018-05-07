@@ -6,13 +6,16 @@ import quirk.Parser;
 import quirk.Scanner;
 import quirk.DefaultErrorReporter;
 import quirk.DefaultModuleLoader;
-import quirk.interpreter.RuntimeError;
+import quirk.core.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
 import quirk.generator.Generator;
 import quirk.generator.JsModuleLoader;
 import quirk.generator.JsGenerator;
 import quirk.generator.PhpGenerator;
+import quirk.generator.PhpResolver;
+import quirk.generator.JsBundleWriter;
+import quirk.generator.PhpWriter;
 
 using haxe.io.Path;
 
@@ -45,26 +48,35 @@ class Quirk {
 
   private static function genFile(path:String, dest:String, kind:String) {
     var reporter = new DefaultErrorReporter();
+    var dest = haxe.io.Path.join([ Sys.getCwd(), dest ]);
     var loader = kind == 'js'
       ? new JsModuleLoader(Sys.getCwd())
       : new DefaultModuleLoader(Sys.getCwd());
+    var writer = kind == 'js'
+      ? new JsBundleWriter(dest)
+      : new PhpWriter(dest);
     var source = loader.load(path);
     var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();
     var parser = new Parser(tokens, reporter);
     var stmts = parser.parse();
     var generator:Generator = kind == 'js'
-      ? new JsGenerator(loader, reporter, { bundle: true, isMain: true })
-      : new PhpGenerator(loader, reporter);
-    var generated = generator.generate(stmts);
-
-    var dest = haxe.io.Path.join([ Sys.getCwd(), dest ]);
-    dest = haxe.io.Path.withExtension(dest, kind);
-    var dir = haxe.io.Path.directory(dest);
-    if (!sys.FileSystem.exists(dir)) {
-      sys.FileSystem.createDirectory(dir);
+      ? new JsGenerator(loader, writer, reporter, { bundle: true, isMain: true })
+      : new PhpGenerator(loader, writer, reporter);
+    if (kind == 'php') {
+      var resolver = new PhpResolver(cast generator);
+      resolver.resolve(stmts);
     }
-    sys.io.File.saveContent(dest, generated);
+    var generated = generator.generate(stmts);
+    generator.write();
+
+    // dest = haxe.io.Path.withExtension(dest, kind);
+    // var dir = haxe.io.Path.directory(dest);
+    // if (!sys.FileSystem.exists(dir)) {
+    //   sys.FileSystem.createDirectory(dir);
+    // }
+    // sys.io.File.saveContent(dest, generated);
+
 
     Sys.println('Saved to :' + dest);
   }

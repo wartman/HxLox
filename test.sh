@@ -18,3 +18,5 @@ echo 'GEN JS'
 echo '------'
 neko bin/quirk.n gen --js run bin/test.js
 node bin/test.js
+
+neko bin/quirk.n gen --php run bin/test_php

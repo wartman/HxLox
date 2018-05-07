@@ -3,6 +3,17 @@ module Std.Core for Reflect, System, Meta
 /// `System` implementation for the js target
 class System {
 
+  static args() {
+    if (process != null) {
+      return process.argv
+    }
+    throw 'Not available on JS target'
+  }
+
+  static command(cmd, args) {
+    throw 'Not available on JS or Node targets (yet)'
+  }
+
   static print(s) {
     if (process != null) {
       // Print WITHOUT a newline in Node environments

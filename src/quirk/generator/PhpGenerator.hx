@@ -4,7 +4,10 @@ import quirk.Expr;
 import quirk.Stmt;
 import quirk.ErrorReporter;
 import quirk.ModuleLoader;
+import quirk.core.RuntimeError;
+import quirk.generator.PhpEnvironment.PhpKind;
 
+using StringTools;
 using Lambda;
 
 class PhpGenerator
@@ -15,20 +18,55 @@ class PhpGenerator
 
   private var reporter:ErrorReporter;
   private var loader:ModuleLoader;
+  private var writer:Writer;
   private var uid:Int = 0;
   private var indentLevel:Int = 0;
-  private var types:Array<String> = [];
+  private var locals:Map<Expr, Int> = new Map();
+  private var environment:PhpEnvironment = new PhpEnvironment();
   private var append:Array<String> = [];
+  private var moduleName:String = null;
+  private var modules:Map<String, String>;
 
-  public function new(loader:ModuleLoader, reporter:ErrorReporter) {
+  public function new(
+    loader:ModuleLoader,
+    writer:Writer,
+    reporter:ErrorReporter,
+    ?modules:Map<String, String> 
+  ) {
     this.loader = loader;
+    this.writer = writer;
     this.reporter = reporter;
+    this.modules = modules != null ? modules : new Map();
+  }
+
+  public function resolve(expr:Expr, depth:Int) {
+    locals.set(expr, depth);
+  }
+
+  public function define(name:Token, kind:PhpKind) {
+    environment.define(name.lexeme, kind);
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    return stmts.map(generateStmt).filter(function (s) {
-      return s != null;
-    }).concat(this.append).join('\n');
+    try {
+      var out = stmts.map(generateStmt).filter(function (s) {
+        return s != null;
+      }).concat(this.append).join('\n');
+      if (moduleName != null) {
+        out = '<?php\nnamespace ' + moduleName + ' {\n' + out + '\n}';
+      } else {
+        out = '<?php\n' + out;
+      }
+      if (moduleName != null) modules.set(moduleName, out);
+      return out;
+    } catch (error:RuntimeError)  {
+      reporter.report(error.token.pos, error.token.lexeme, error.message);
+      return '';
+    }
+  }
+
+  public function write() {
+    this.writer.write(modules);
   }
 
   private function generateStmt(stmt:Stmt):String {
@@ -62,11 +100,13 @@ class PhpGenerator
   }
 
   public function visitReturnStmt(stmt:Stmt.Return):String {
-    return stmt.value != null ? 'return ' + generateExpr(stmt.value) + ';' : 'return;';
+    return getIndent() + (stmt.value != null 
+      ? 'return ' + generateExpr(stmt.value) + ';' 
+      : 'return;');
   }
 
   public function visitThrowStmt(stmt:Stmt.Throw):String {
-    return 'throw new \\Quirk\\Exception(' + generateExpr(stmt.expr) + ');';
+    return getIndent() + 'throw new \\Quirk\\Exception(' + generateExpr(stmt.expr) + ');';
   }
 
   public function visitTryStmt(stmt:Stmt.Try):String {
@@ -78,7 +118,7 @@ class PhpGenerator
   }
 
   public function visitVarStmt(stmt:Stmt.Var):String {
-    return "$" + stmt.name.lexeme + ' = ' + (stmt.initializer != null 
+    return getIndent() + "$" + stmt.name.lexeme + ' = ' + (stmt.initializer != null 
       ? generateExpr(stmt.initializer)
       : 'null') + ';';
   }
@@ -88,11 +128,21 @@ class PhpGenerator
   }
 
   public function visitCallExpr(expr:Expr.Call):String {
-    return '// todo';
+    return generateExpr(expr.callee) + '(' + expr.args.map(generateExpr).join(', ')  + ')';
   }
 
   public function visitGetExpr(expr:Expr.Get):String {
-    return generateExpr(expr.object) + '->' + expr.name.lexeme;
+    // this is temporary: will use the resolver soon.
+    // Current issues: will NOT handle instances where, for example,
+    // we have a `var ClassName` and a `class ClassName`. Also,
+    // will NOT work for things defined later in the same file.
+    var target = generateExpr(expr.object);
+    var kind = environment.values.get(target);
+    if (kind != null && kind.equals(PhpType)) {
+      return target + '::' + expr.name.lexeme;
+    }
+
+    return target + '->' + expr.name.lexeme;
   }
 
   public function visitGroupingExpr(expr:Expr.Grouping):String {
@@ -100,7 +150,9 @@ class PhpGenerator
   }
 
   public function visitLiteralExpr(expr:Expr.Literal):String {
-    return expr.value;
+    return Std.is(expr.value, String)
+      ? '"' + Std.string(expr.value).replace('"', '\\"') + '"'
+      : expr.value;
   }
 
   public function visitLogicalExpr(expr:Expr.Logical):String {
@@ -132,34 +184,83 @@ class PhpGenerator
   }
 
   public function visitFunStmt(stmt:Stmt.Fun):String {
-    return '// todo';
+    return 'function ' + stmt.name.lexeme + genParams(stmt.params) + ' '
+      + genBlock(stmt.body);
   }
 
   public function visitClassStmt(stmt:Stmt.Class):String {
     var name = stmt.name.lexeme;
-    var out = 'class ' + name;
+    var metaList:Map<String, Array<Expr>> = new Map();
+    var constructors:Array<String> = [];
+    // var fullName = moduleName == null
+    //   ? name
+    //   : moduleName.replace('/', '.') + '.' + name;
+
+    if (stmt.meta.length > 0) {
+      metaList.set('__TYPE__', stmt.meta);
+    }
+
+    var out = getIndent() + 'class ' + name;
     if (stmt.superclass != null) {
       out += ' extends ' + generateExpr(stmt.superclass);
     }
-    out += ' {';
+    out += ' {\n';
+    indent();
 
-    // todo
+    // All classes are initializeable
+    out += getIndent() + 'public function __construct() {}\n';
 
-    out += '}';
+    out += stmt.staticMethods.map(function (method) {
+      if (method.kind.equals(Stmt.FunKind.FunConstructor)) {
+        constructors.push(method.name.lexeme);
+      }
+      return getIndent() + 'static public ' + visitFieldStmt(method, metaList, name);
+    }).concat(stmt.methods.map(function (method) {
+      return getIndent() + 'public ' + visitFieldStmt(method, metaList, name);
+    })).join('\n');
+
+    // // todo: handle getters and setters
+    // out += getIndent() + 'public function __get($name)'
+
+    outdent();
+    out += '\n' + getIndent() + '}';
     return out;
   }
 
+  private function visitFieldStmt(method:Stmt.Fun, metaList:Map<String, Array<Expr>>, cls:String) {
+    return switch method.kind {
+      case Stmt.FunKind.FunGetter:
+        method.name.lexeme = 'get_' + method.name.lexeme;
+        visitFunStmt(method);
+      case Stmt.FunKind.FunSetter:
+        method.name.lexeme = 'set_' + method.name.lexeme;
+        visitFunStmt(method);
+      case Stmt.FunKind.FunConstructor:
+        'function ' + method.name.lexeme + genParams(method.params) + ' {\n'
+          + indent().getIndent() + "$instance = new " + cls + '();\n'
+          + getIndent() + "$instance->" + method.name.lexeme + genParams(method.params) + ';\n'
+          + getIndent() + "return $instance;\n"
+          + outdent().getIndent() + '}\n'
+        + getIndent() + 'public ' + visitFunStmt(method);
+      default:
+        visitFunStmt(method);
+    }
+  }
+
   public function visitImportStmt(stmt:Stmt.Import):String {
+    loadModule(loader.find(stmt.path));
     var path = stmt.path.map(function (p) return p.lexeme);
     return stmt.imports.map(function (target) {
-      types.push(target.lexeme);
-      return 'use ' + path.concat([ target.lexeme ]).join('\\') + ';';
+      return getIndent() + 'use ' + path.concat([ target.lexeme ]).join('\\') + ';';
     }).join('\n');
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
+    moduleName = stmt.path.map(function (f) return f.lexeme).join('.');
+    indent();
+    return null;
     // todo: will need to split into seperate files for each export :P
-    return 'namespace ' + stmt.path.map(function (p) return p.lexeme).join('\\') + ';';
+    // return 'namespace ' + stmt.path.map(function (p) return p.lexeme).join('\\') + ';';
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):String {
@@ -167,8 +268,12 @@ class PhpGenerator
   }
 
   public function visitVariableExpr(expr:Expr.Variable):String {
-    if (types.indexOf(expr.name.lexeme) >= 0) {
-      return expr.name.lexeme;
+    var kind = environment.values.get(expr.name.lexeme);
+    if (kind != null) {
+      return switch kind {
+        case PhpType | PhpFun: expr.name.lexeme;
+        default: "$" + expr.name.lexeme;
+      }
     }
     return "$" + expr.name.lexeme;
   }
@@ -178,7 +283,13 @@ class PhpGenerator
   }
 
   public function visitAssignExpr(expr:Expr.Assign):String {
-    return '// todo';
+    return expr.name.lexeme + ' = ' + generateExpr(expr.value);
+
+    // var value = generateExpr(expr.value);
+    // var distance = locals.get(expr);
+    // if (distance != null) {
+
+    // }
   }
 
   public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):String {
@@ -187,6 +298,18 @@ class PhpGenerator
 
   public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):String {
     return '// todo';
+  }
+
+  private function genParams(params:Array<Token>) {
+    return '(' + params.map(function (t) return '$' + t.lexeme).join(', ') + ')';
+  }
+
+  private function genBlock(stmts:Array<Stmt>) {
+    var out = '{\n';
+    indent();
+    out += stmts.map(generateStmt).join('\n'); 
+    outdent();
+    return out + '\n' + getIndent() + '}';
   }
 
   private function getIndent() {
@@ -199,6 +322,7 @@ class PhpGenerator
 
   private function indent() {
     indentLevel++;
+    return this;
   }
 
   private function outdent() {
@@ -206,10 +330,27 @@ class PhpGenerator
     if (indentLevel < 0) {
       indentLevel = 0;
     }
+    return this;
   }
 
   private function tempVar(prefix:String = 'tmp') {
     return '__quirk_' + prefix + (uid++);
+  }
+
+  private function loadModule(path:String) {
+    if (modules.exists(path)) return '';
+    var stmts = parseModule(path);
+    var generator = new PhpGenerator(loader, writer, reporter, modules);
+    return generator.generate(stmts);
+  }
+
+  private function parseModule(path:String) {
+    var source = loader.load(path);
+    var scanner = new quirk.Scanner(source, path, reporter);
+    var tokens = scanner.scanTokens();
+    var parser = new quirk.Parser(tokens, reporter);
+    var stmts = parser.parse();
+    return stmts;
   }
 
 }

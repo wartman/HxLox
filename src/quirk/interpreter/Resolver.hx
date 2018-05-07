@@ -297,7 +297,7 @@ class Resolver
   }
 
   private function resolveLocal(expr:Expr, name:Token) {
-    var i = scopes.length -1;
+    var i = scopes.length - 1;
     while (i >= 0) {
       var scope = scopes[i];
       if (scope.exists(name.lexeme)) {

@@ -2,6 +2,10 @@ module Std.Core for System, Reflect, Meta
 
 class System {
 
+  foreign static args()
+
+  foreign static command(cmd, args)
+
   foreign static print(s)
 
   foreign static getCwd()

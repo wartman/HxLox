@@ -1,4 +1,6 @@
-package quirk.interpreter;
+package quirk.core;
+
+import quirk.Token;
 
 class RuntimeError {
 

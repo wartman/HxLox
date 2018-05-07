@@ -1,6 +1,7 @@
 package quirk.interpreter.foreign;
 
 import quirk.interpreter.Interpreter;
+import quirk.interpreter.Class;
 
 using StringTools;
 using quirk.interpreter.Helper;
@@ -14,6 +15,13 @@ class Core {
 
   private static function system(interpreter:Interpreter) {
     interpreter
+      .addForeign('Std.Core.System.args()', function (args, f) {
+        var arrClass:Class = interpreter.globals.values.get('Array');
+        return arrClass.construct('new', interpreter, [ Sys.args() ]);
+      })
+      .addForeign('Std.Core.System.command(_,_)', function (args, f) {
+        return Sys.command(Std.string(args[0]), args[1]);
+      })
       .addForeign('Std.Core.System.print(_)', function (args, f) {
         var value = Std.string(args[0]);
         value = value.replace("\\n", '\n'); // handle this issue better :P
@@ -103,12 +111,33 @@ class Core {
         return arr;
       })
       .addForeign('Std.Core.Reflect.getConstructor(_,_)', function (args, f) {
-        // todo
-        return null;
+        var target:Class;
+        var inst = args[0];
+        if (Std.is(inst, Instance)) {
+          target = inst.getClass();
+        } else {
+          target = cast inst;
+        }
+        // todo: ensure actually is constructor :P
+        return target.findMethod(target, args[1]);
       })
       .addForeign('Std.Core.Reflect.getConstructorNames(_)', function (args, f) {
-        // todo
-        return null;
+        var target:Class;
+        var inst = args[0];
+        var arrCls:Class = globals.values.get('Array');
+        var names = [];
+        if (Std.is(inst, Instance)) {
+          target = inst.getClass();
+        } else {
+          target = cast inst;
+        }
+        for (name in target.staticMethods.keys()) {
+          var method = target.staticMethods.get(name);
+          if (method.declaration.kind.equals(quirk.Stmt.FunKind.FunConstructor)) {
+            names.push(name);
+          }
+        }
+        return arrCls.construct('new', interpreter, [ names ]);
       })
       .addForeign('Std.Core.Reflect.__getMetadata(_)', function (args, f) {
         var target = args[0];
