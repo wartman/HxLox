@@ -1,0 +1,54 @@
+module Std.Mirror for Reflect, Meta
+
+class Reflect {
+
+  foreign static getClass(target)
+
+  foreign static getClassName(target)
+
+  foreign static getSuperclass(target)
+
+  foreign static getMethod(target, name)
+
+  foreign static getMethodNames(target)
+
+  foreign static getConstructor(target, name)
+
+  foreign static getConstructorNames(target)
+
+  foreign static getField(target, name)
+
+  foreign static getFieldNames(target)
+
+  foreign static __getMetadata(target)
+
+  static is(a, b) {
+    var passing = this.getClassName(a) == this.getClassName(b)
+    if (passing != true) {
+      var superclass = this.getSuperclass(a)
+      if (superclass == null) return false
+      return this.is(superclass, b)
+    }
+    return passing
+  }
+
+}
+
+class Meta {
+  
+  static getFields(target) {
+    var fields = {}
+    fields.__TYPE__ = Reflect.__getMetadata(Reflect.getClass(target))
+    Reflect.getMethodNames(target).forEach {
+      var method = Reflect.getMethod(target, it)
+      fields[it] = Reflect.__getMetadata(method)
+    }
+    // todo: need to merge with superclass
+    return fields
+  }
+  
+  static getType(target) {
+    return this.getFields(target).__TYPE__
+  }
+
+}

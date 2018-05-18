@@ -45,6 +45,21 @@ class MethodTypes {
   // Setter
   bar = value { this.values['bar'] = value }
 
+  // Optional types (just to check parsing -- no real tests for now)
+  testType(param:String):Void {
+    var foo:String = 'foo'
+  }
+
+  // Optional types (just to check parsing -- no real tests for now)
+  testGetter:String {
+    return 'foo'
+  }
+
+  // Optional types (just to check parsing -- no real tests for now)
+  testSetter = value:String {
+    // cool.
+  }
+
   construct new(values) {
     this.values = values
   }

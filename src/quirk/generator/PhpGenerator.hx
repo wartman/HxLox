@@ -93,8 +93,8 @@ class PhpGenerator
 
   public function visitIfStmt(stmt:Stmt.If):String {
     var out = getIndent() + 'if (' + generateExpr(stmt.condition) + ') ' + generateStmt(stmt.thenBranch);
-    if (stmt.thenBranch != null) {
-      out += ' else ' + generateStmt(stmt.thenBranch);
+    if (stmt.elseBranch != null) {
+      out += ' else ' + generateStmt(stmt.elseBranch);
     }
     return out;
   }
@@ -110,11 +110,16 @@ class PhpGenerator
   }
 
   public function visitTryStmt(stmt:Stmt.Try):String {
-    return '// todo';
+    var out = getIndent() + 'try ' + generateStmt(stmt.body);
+    if (stmt.caught != null) {
+      out += ' catch (' + stmt.exception.lexeme + ') ' + generateStmt(stmt.caught);
+    }
+    return out;
   }
 
   public function visitWhileStmt(stmt:Stmt.While):String {
-    return '// todo';
+    return getIndent() + 'while (' + generateExpr(stmt.condition) + ') '
+      + generateStmt(stmt.body);
   }
 
   public function visitVarStmt(stmt:Stmt.Var):String {
@@ -293,12 +298,25 @@ class PhpGenerator
   }
 
   public function visitArrayLiteralExpr(expr:Expr.ArrayLiteral):String {
-    return '// todo';
+    return '[' + expr.values.map(generateExpr).join(', ') + ']';
   }
 
   public function visitObjectLiteralExpr(expr:Expr.ObjectLiteral):String {
-    return '// todo';
+    var out = 'new \\ArrayObject(';
+    if (expr.values.length == 0) {
+      return out + ')';
+    }
+    out += '[\n';
+    var pairs = [];
+    indent();
+    for (i in 0...expr.values.length) {
+      pairs.push( getIndent() + '"' + expr.keys[i].lexeme + '" => ' + generateExpr(expr.values[i]));
+    }
+    out += pairs.join(',\n') + '\n';
+    outdent();
+    return out + getIndent() + '])';
   }
+
 
   private function genParams(params:Array<Token>) {
     return '(' + params.map(function (t) return '$' + t.lexeme).join(', ') + ')';
@@ -341,6 +359,8 @@ class PhpGenerator
     if (modules.exists(path)) return '';
     var stmts = parseModule(path);
     var generator = new PhpGenerator(loader, writer, reporter, modules);
+    var resolver = new PhpResolver(generator);
+    resolver.resolve(stmts);
     return generator.generate(stmts);
   }
 

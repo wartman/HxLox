@@ -1,0 +1,96 @@
+module Std.Mirror for Reflect, Meta
+
+var _toString = ({}).toString
+
+/// `Reflect` implementation for the js target. This depends on
+/// the `lib/js-lib.js` file to work.
+class Reflect {
+  
+  static getClass(target) {
+    return __quirk.getClass(this.getClassName(target))
+  }
+
+  static getClassName(target) {
+    if (_toString.call(target) == '[object Array]') {
+      return 'Array'
+    }
+    // todo: more primitive checks
+    return target.__name
+  }
+
+  static getSuperclass(target) {
+    if (target.prototype != null) {
+      return target.prototype.__super
+    }
+    return target.__super
+  }
+
+  static is(a, b) {
+    var passing = this.getClassName(a) == this.getClassName(b)
+    if (passing != true) {
+      var superclass = this.getSuperclass(a)
+      if (superclass == null) return false
+      return this.is(superclass, b)
+    }
+    return passing
+  }
+
+  static getMethod(target, name) {
+    var f = target[name]
+    if (f && f.bind) {
+      return f.bind(target)
+    }
+    return f
+  }
+
+  static getMethodNames(target) {
+    var cls = this.getClass(target)
+    if (cls == null) return []
+    return Object.getOwnPropertyNames(cls.prototype) 
+  }
+
+  static getConstructor(target, name) {
+    var cls = this.getClass(target)
+    var c = cls[name]
+    if (c && c.bind) {
+      return c.bind(cls)
+    }
+    return c
+  }
+
+  static getConstructorNames(target) {
+    return __quirk.getConstructors(this.getClassName(target))
+  }
+
+  static getField(target, name) {
+    return target[name]
+  }
+
+  static getFieldNames(target) {
+    return Object.keys(target)
+  }
+
+}
+
+class Meta {
+  
+  static getFields(target) {
+    var name = Reflect.getClassName(target)
+    var sup = Reflect.getSuperclass(target)
+    var meta = __quirk.meta[name]
+    
+    if (meta == null) meta = {}
+
+    if (sup != null) {
+      // todo: will need to handle deep merging
+      return Object.assign({}, this.getFields(sup), meta)
+    }
+
+    return meta
+  }
+
+  static getType(target) {
+    return this.getFields(target).__TYPE__
+  }
+
+}

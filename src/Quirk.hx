@@ -9,15 +9,16 @@ import quirk.DefaultModuleLoader;
 import quirk.core.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
-import quirk.generator.Generator;
-import quirk.generator.JsModuleLoader;
-import quirk.generator.JsGenerator;
-import quirk.generator.PhpGenerator;
-import quirk.generator.PhpResolver;
-import quirk.generator.JsBundleWriter;
-import quirk.generator.PhpWriter;
+import quirk.generator.JsTarget;
+import quirk.generator.JsNodeTarget;
 
 using haxe.io.Path;
+
+enum GenKind {
+  GenJs;
+  GenJsNode;
+  GenPhp;
+}
 
 class Quirk {
 
@@ -32,8 +33,9 @@ class Quirk {
           throw 'Usage: gen [kind] [src] [dst]';
         }
         switch (args[1]) {
-          case '--js': genFile(args[2], args[3], 'js');
-          case '--php': genFile(args[2], args[3], 'php');
+          case '--js': genFile(args[2], args[3], GenJs);
+          case '--node': genFile(args[2], args[3], GenJsNode);
+          case '--php': genFile(args[2], args[3], GenPhp);
           default: throw 'Invalid generator type';
         }
         return;
@@ -46,39 +48,20 @@ class Quirk {
     }
   }
 
-  private static function genFile(path:String, dest:String, kind:String) {
-    var reporter = new DefaultErrorReporter();
+  private static function genFile(main:String, dest:String, kind:GenKind) {
+    var reporter = new DefaultErrorReporter(); 
     var dest = haxe.io.Path.join([ Sys.getCwd(), dest ]);
-    var loader = kind == 'js'
-      ? new JsModuleLoader(Sys.getCwd())
-      : new DefaultModuleLoader(Sys.getCwd());
-    var writer = kind == 'js'
-      ? new JsBundleWriter(dest)
-      : new PhpWriter(dest);
-    var source = loader.load(path);
-    var scanner = new Scanner(source, path, reporter);
-    var tokens = scanner.scanTokens();
-    var parser = new Parser(tokens, reporter);
-    var stmts = parser.parse();
-    var generator:Generator = kind == 'js'
-      ? new JsGenerator(loader, writer, reporter, { bundle: true, isMain: true })
-      : new PhpGenerator(loader, writer, reporter);
-    if (kind == 'php') {
-      var resolver = new PhpResolver(cast generator);
-      resolver.resolve(stmts);
+
+    switch (kind) {
+      case GenJs:
+        var target = new JsTarget(Sys.getCwd(), dest, main, reporter);
+        target.write();
+      case GenJsNode:
+        var target = new JsNodeTarget(Sys.getCwd(), dest, main, reporter);
+        target.write();
+      case GenPhp:
+        throw 'Not implemented yet';
     }
-    var generated = generator.generate(stmts);
-    generator.write();
-
-    // dest = haxe.io.Path.withExtension(dest, kind);
-    // var dir = haxe.io.Path.directory(dest);
-    // if (!sys.FileSystem.exists(dir)) {
-    //   sys.FileSystem.createDirectory(dir);
-    // }
-    // sys.io.File.saveContent(dest, generated);
-
-
-    Sys.println('Saved to :' + dest);
   }
 
   private static function runFile(path:String) {

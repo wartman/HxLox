@@ -43,6 +43,7 @@ class Parser {
   private function varDeclaration(?meta:Array<Expr>):Stmt {
     if (meta == null) meta = [];
     var name:Token = consume(TokIdentifier, "Expect variable name.");
+    typeHint();
     var initializer:Expr = null;
     if (match([ TokEqual ])) {
       initializer = expression();
@@ -63,9 +64,9 @@ class Parser {
 
     consume(TokLeftParen, 'Expect \'(\' after ${kind} name.');
     var params:Array<Token> = functionParams();
+    typeHint();
     consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
     var body:Array<Stmt> = block();
-    
     return new Stmt.Fun(name, params, body, meta, kind);
   }
 
@@ -76,8 +77,8 @@ class Parser {
         if (params.length >= 8) {
           error(peek(), "Cannot have more than 8 parameters.");
         }
-
         params.push(consume(TokIdentifier, 'Expect parameter name'));
+        typeHint();
       } while(match([ TokComma ]));
     }
     consume(TokRightParen, 'Expect \')\' after parameters');
@@ -88,6 +89,13 @@ class Parser {
     var def = functionDef(kind, meta);
     ignoreNewlines();
     return def;
+  }
+
+  private function typeHint() {
+    if (match ([TokColon])) {
+      // For now, don't do anything with type hints. Just eat them.
+      consume(TokIdentifier, "Expect a type hint after ':'");
+    }
   }
 
   private function enumDeclaration(?meta:Array<Expr>):Stmt {
@@ -165,6 +173,7 @@ class Parser {
     var name = consume(TokIdentifier, 'Expect an identifier');
     consume(TokLeftParen, "Expect '(' after method name");
     var params = functionParams();
+    typeHint();
     if (match([ TokLeftBrace ])) {
       error(previous(), 'Foreign methods cannot have a method body');
     }
@@ -176,6 +185,7 @@ class Parser {
     var name = consume(TokIdentifier, 'Expect an identifier');
     consume(TokLeftParen, "Expect '(' after method name");
     var params = functionParams();
+    typeHint();
     consume(TokLeftBrace, "Expect '{' after argument list");
     var fun = new Stmt.Fun(name, params, block(), meta, Stmt.FunKind.FunConstructor);
     ignoreNewlines();
@@ -187,13 +197,19 @@ class Parser {
     var fun:Stmt.Fun = null;
     if (match([ TokLeftBrace ])) {
       fun = new Stmt.Fun(name, [], block(), meta, Stmt.FunKind.FunGetter);
+    } else if (check(TokColon)) {
+      typeHint();
+      consume(TokLeftBrace, "Expect a '{' after a getter type hint");
+      fun = new Stmt.Fun(name, [], block(), meta, Stmt.FunKind.FunGetter);
     } else if (match([ TokEqual ])) {
       var param = consume(TokIdentifier, 'Expect an identifier');
+      typeHint();
       consume(TokLeftBrace, 'Expect an `{` after the setter value');
       fun = new Stmt.Fun(name, [ param ], block(), meta, Stmt.FunKind.FunSetter);
     } else {
       consume(TokLeftParen, "Expect '(' after method name");
       var params = functionParams();
+      typeHint();
       consume(TokLeftBrace, "Expect '{' after argument list");
       fun = new Stmt.Fun(name, params, block(), meta, Stmt.FunKind.FunMethod);
     }

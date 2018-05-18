@@ -168,6 +168,9 @@ class PhpResolver
 
   public function visitClassStmt(stmt:Stmt.Class):Void {
     generator.define(stmt.name, PhpType);
+    if (stmt.superclass != null) {
+      resolveExpr(stmt.superclass);
+    }
     for (method in stmt.methods) {
       resolveFunction(method);
     }
