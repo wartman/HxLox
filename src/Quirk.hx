@@ -9,6 +9,8 @@ import quirk.DefaultModuleLoader;
 import quirk.core.RuntimeError;
 import quirk.interpreter.Resolver;
 import quirk.interpreter.Interpreter;
+import quirk.generator.ModuleWriter;
+import quirk.generator.JsModuleLoader;
 import quirk.generator.JsTarget;
 import quirk.generator.JsNodeTarget;
 
@@ -49,15 +51,17 @@ class Quirk {
   }
 
   private static function genFile(main:String, dest:String, kind:GenKind) {
-    var reporter = new DefaultErrorReporter(); 
-    var dest = haxe.io.Path.join([ Sys.getCwd(), dest ]);
+    var reporter = new DefaultErrorReporter();
+    var writer = new ModuleWriter(haxe.io.Path.join([ Sys.getCwd(), dest ]));
 
     switch (kind) {
       case GenJs:
-        var target = new JsTarget(Sys.getCwd(), dest, main, reporter);
+        var loader = new JsModuleLoader(Sys.getCwd());
+        var target = new JsTarget(main, loader, writer, reporter);
         target.write();
       case GenJsNode:
-        var target = new JsNodeTarget(Sys.getCwd(), dest, main, reporter);
+        var loader = new JsModuleLoader(Sys.getCwd());
+        var target = new JsNodeTarget(main, loader, writer, reporter);
         target.write();
       case GenPhp:
         throw 'Not implemented yet';

@@ -13,14 +13,18 @@ class ModuleWriter {
     this.root = root;
   }
 
-  public function writeToRoot(content:String) {
-    ensureDir(root);
+  public function writeToRoot(content:String, ext:String) {
+    var path = root.withExtension(ext);
+    ensureDir(path);
     root.saveContent(content);
     logSuccess(root);
   }
 
-  public function writeToFile(path:String, content:String) {
+  public function writeToFile(path:String, content:String, ?ext:String) {
     var path = Path.join([ root, path ]);
+    if (ext != null) {
+      path = path.withExtension(ext);
+    }
     ensureDir(path);
     path.saveContent(content);
     logSuccess(path);

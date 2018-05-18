@@ -27,7 +27,7 @@ class BaseTarget implements Target {
     reporter:ErrorReporter
   ) {
     this.loader = loader;
-    this.dest = dest;
+    this.writer = writer;
     this.main = main;
     this.reporter = reporter;
   }
