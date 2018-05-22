@@ -1,23 +1,31 @@
+import Std.Core for System
 import Std.Build for Target, project
-import Std.Cli as Cli
 
 project {
 
+  it.root = System.getCwd()
   it.name = 'Test'
   it.src = 'test'
-  it.main = 'Test.Main'
+  it.main = 'Main'
+  it.libs = {
+    Std: '${System.getCwd()}/std'
+  }
 
   it.sub {
-    it.target = Target.Js
-    it.dst = 'bin/js/test.js'
-    it.bundle = true
+    it.target = Target.js
+    it.dst = 'bin/__js/test.js'
     it.after {
-      Cli.execute('node ./bin/js/test.js')
+      System.command('node ./bin/__js/test.js', null)
     }
   }
 
-  it.sub {
-    it.target = Target.Interpret
-  }
+  // it.sub {
+  //   it.target = Target.node
+  //   it.dst = 'bin/__node'
+  // }
+
+  // it.sub {
+  //  it.target = Target.interpret
+  // }
 
 }

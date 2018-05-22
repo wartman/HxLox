@@ -1,23 +1,19 @@
-module Test.Main for main
-
 import Std.Test for Runner
 import Test.Basics as Basics
 import Test.Core as Core
 import Test.Syntax as Syntax
 import Test.Std.HtmlBuilder for HtmlBuilderTest
 
-fun main() {
-  var runner = Runner.new()
+var runner = Runner.new()
 
-  runner.
-    add(Basics.ArrayTest.new()).
-    add(Basics.ObjectTest.new()).
-    add(Basics.StringTest.new()).
-    add(Basics.LambdaTest.new()).
-    add(Syntax.EnumTest.new()).
-    add(Syntax.MethodTest.new()).
-    add(Core.ReflectTest.new()).
-    add(HtmlBuilderTest.new())
+runner.
+  add(Basics.ArrayTest.new()).
+  add(Basics.ObjectTest.new()).
+  add(Basics.StringTest.new()).
+  add(Basics.LambdaTest.new()).
+  add(Syntax.EnumTest.new()).
+  add(Syntax.MethodTest.new()).
+  add(Core.ReflectTest.new()).
+  add(HtmlBuilderTest.new())
 
-  runner.run()
-}
+runner.run()

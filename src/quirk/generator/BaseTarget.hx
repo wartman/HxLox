@@ -38,6 +38,9 @@ class BaseTarget implements Target {
 
   public function addModuleDependency(name:String, dep:String):Void {
     var mod = modules.get(name);
+    if (mod == null) {
+      throw 'Tried to add [$dep] for unregistered module [$name]';
+    }
     if (mod.deps.exists(function (d) return d == dep)) {
       return;
     }

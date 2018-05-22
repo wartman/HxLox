@@ -263,30 +263,34 @@ class JsGenerator
 
   public function visitImportStmt(stmt:Stmt.Import):String {
     // Allow `@require` to override default paths
-    var metaReq:Null<Expr.Metadata> = cast stmt.meta.find(function (m) {
+    var isNpm:Bool = stmt.meta.find(function (m) {
       var meta:Expr.Metadata = cast m;
-      return meta.name.lexeme == 'require';
-    });
-    var loadName = target.resolveModule(stmt.path);
-    var dep:String = metaReq != null
-      ? generateExpr(metaReq.args[0])
-      : '"' + loadName + '"';
+      return meta.name.lexeme == 'npm';
+    }) != null;
+    var dep = target.resolveModule(stmt.path);
 
     target.addModuleDependency(moduleName, dep);
-    target.addModule(loadName);
+    if (!isNpm) target.addModule(dep);
 
     var tmp = tempVar('req');
-    var out = [ 'var ${tmp} = require(${dep})' ];
+    var out = [ 'var $tmp = require("$dep")' ];
     if (stmt.alias != null) {
       out.push('var ' + stmt.alias.lexeme + ' = ' + tmp);
     }
     return out.concat(stmt.imports.map(function (t) {
-      return 'var ' + t.lexeme + ' = ${tmp}.' + t.lexeme;
+      return 'var ${t.lexeme} = ${tmp}.${t.lexeme}';
     })).join(';\n') + ';';
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
-    moduleName = target.resolveModule(stmt.path);
+    var name = target.resolveModule(stmt.path);
+    if (name == 'global') {
+      append.push(stmt.exports.map(function (t) {
+        return 'global.' + t.lexeme + ' = ' + t.lexeme + ';';
+      }).join(', '));
+      return null;
+    }
+    moduleName = name;
     append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
     }).join(', ') + '};');

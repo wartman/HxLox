@@ -110,7 +110,12 @@ class Parser {
     while (!check(TokRightBrace) && !isAtEnd()) {
       var funMeta:Array<Expr> = match([ TokAt ]) ? parseMeta() : [];
       var cname = consume(TokIdentifier, 'Expect an enum constructor name');
-      var body:Array<Stmt> = [ new Stmt.Return(cname, new Expr.Literal(index)) ];
+      var body:Array<Stmt> = null;
+      if (match([ TokEqual ])) {
+        body = [ new Stmt.Return(cname, expression()) ];
+      } else {
+        body = [ new Stmt.Return(cname, new Expr.Literal(index)) ];
+      }
       staticMethods.push(new Stmt.Fun(
         cname,
         [],
@@ -858,7 +863,7 @@ class Parser {
       // We don't consume it here, as the parser needs to check for it.
       return true;
     }
-    if (match([ TokNewline ])) {
+    if (match([ TokNewline, TokEof ])) {
       ignoreNewlines(); // consume any extras
       return true;
     }

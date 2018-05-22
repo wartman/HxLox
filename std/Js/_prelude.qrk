@@ -1,3 +1,5 @@
+module global for __quirk
+
 /// Helpers used by Quirk to make things work. This must come
 /// before anything else in this file.
 @core

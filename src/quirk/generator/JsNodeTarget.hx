@@ -11,7 +11,7 @@ class JsNodeTarget extends JsTarget {
       var body = entry.generated;
       // Add prelude deps to file
       if (name != '_prelude') {
-        body = 'var __quirk = require("_prelude").__quirk;\n' + body;
+        body = 'require("_prelude");\nvar __quirk = global.__quirk;\n' + body;
       }
       writer.writeToFile(name, body, 'js');
     }

@@ -23,12 +23,13 @@ class JsTarget extends BaseTarget {
       var entry = modules.get(name);
       var deps = entry.deps;
       var body = entry.generated;
-      output.push('__quirk.env.define("' + name + '", [' +
-        deps.join(',') + '], function (require, module) {\n'
+      output.push('__quirk.env.define("' + name + '", ['
+        + deps.map(function (d) return '"$d"').join(',') + '], function (require, module) {\n'
         + body + '\n});');
     }
     output.push('__quirk.env.main("' + main + '");');
-    writer.writeToRoot(output.join('\n'), 'js');
+    writer.writeToRoot('!(function (global, undefined) {\n'
+      + output.join('\n') + '\n})(global != null ? global : window);', 'js');
   }
 
 }

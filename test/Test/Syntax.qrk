@@ -6,8 +6,9 @@ import Std.Test for Case
 // Note: I intend to make enums way more useful later. This
 // is just a super simple starting point.
 enum EnumFixture {
-  Foo
-  Bar
+  foo
+  bar
+  constantValue = "foo"
 }
 
 class EnumTest : Case {
@@ -18,9 +19,15 @@ class EnumTest : Case {
   
   @test('Comparison')
   testComparison() {
-    var e = EnumFixture.Foo
-    this.assertTrue(e == EnumFixture.Foo)
-    this.assertFalse(e == EnumFixture.Bar)
+    var e = EnumFixture.foo
+    this.assertTrue(e == EnumFixture.foo)
+    this.assertFalse(e == EnumFixture.bar)
+  }
+
+  @test('Constant value')
+  testConstant() {
+    var e = EnumFixture.constantValue
+    this.assertEquals(e, 'foo')
   }
 
 }

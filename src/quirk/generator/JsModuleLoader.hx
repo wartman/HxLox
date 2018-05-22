@@ -13,25 +13,34 @@ class JsModuleLoader implements ModuleLoader {
   private static var implementations:Map<String, String> = [ 
     'Std/Core' => 'Std/Js/Core'
   ];
+  private var mappings:Map<String, String>;
   private var root:String;
   private var extension:String = 'qrk';
 
-  public function new(root:String) {
+  public function new(root:String, ?mappings:Map<String, String>) {
     this.root = root;
+    this.mappings = mappings != null? mappings : new Map();
   }
 
   public function find(tokens:Array<Token>):String {
     var first = tokens[0].lexeme;
     var parts = tokens.map(function (t) return t.lexeme);
-    if (first.toLowerCase() == 'npm') {
-      return parts.splice(0, 1).join('/');
-    }
     return parts.join('/');
   }
 
   public function load(path:String):String {
     if (implementations.exists(path)) {
       path = implementations.get(path);
+    }
+    for (pattern in mappings.keys()) {
+      var re = new EReg('^' + pattern, 'i');
+      if (re.match(path)) {
+        var path = re
+          .replace(path, mappings.get(pattern))
+          .normalize()
+          .withExtension(extension);
+        return File.getBytes(path).toString();
+      }
     }
     if (path.extension() == '') {
       path = path.withExtension(extension);

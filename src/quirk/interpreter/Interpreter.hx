@@ -48,6 +48,7 @@ class Interpreter
     // Setup default types
     quirk.interpreter.foreign.Primitives.register(this);
     quirk.interpreter.foreign.Core.register(this);
+    quirk.interpreter.foreign.Build.register(this);
   }
 
   public function interpret(stmts:Array<Stmt>) {

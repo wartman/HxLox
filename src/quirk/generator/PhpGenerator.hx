@@ -16,27 +16,17 @@ class PhpGenerator
   implements StmtVisitor<String>
 {
 
-  private var reporter:ErrorReporter;
-  private var loader:ModuleLoader;
-  private var writer:Writer;
+  private var target:Target;
   private var uid:Int = 0;
   private var indentLevel:Int = 0;
   private var locals:Map<Expr, Int> = new Map();
   private var environment:PhpEnvironment = new PhpEnvironment();
   private var append:Array<String> = [];
   private var moduleName:String = null;
-  private var modules:Map<String, String>;
-
-  public function new(
-    loader:ModuleLoader,
-    writer:Writer,
-    reporter:ErrorReporter,
-    ?modules:Map<String, String> 
-  ) {
-    this.loader = loader;
-    this.writer = writer;
-    this.reporter = reporter;
-    this.modules = modules != null ? modules : new Map();
+  
+  public function new(target:Target, ?moduleName:String) {
+    this.target = target;
+    this.moduleName = moduleName;
   }
 
   public function resolve(expr:Expr, depth:Int) {
@@ -49,14 +39,9 @@ class PhpGenerator
 
   public function generate(stmts:Array<Stmt>):String {
     try {
-      var out = stmts.map(generateStmt).filter(function (s) {
+      var out = '<?php\n' + stmts.map(generateStmt).filter(function (s) {
         return s != null;
       }).concat(this.append).join('\n');
-      if (moduleName != null) {
-        out = '<?php\nnamespace ' + moduleName + ' {\n' + out + '\n}';
-      } else {
-        out = '<?php\n' + out;
-      }
       if (moduleName != null) modules.set(moduleName, out);
       return out;
     } catch (error:RuntimeError)  {
@@ -253,19 +238,21 @@ class PhpGenerator
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    loadModule(loader.find(stmt.path));
-    var path = stmt.path.map(function (p) return p.lexeme);
+    var path = target.resolveModule(stmt.path);
+    var phpPath = stmt.path.map(function (p) return p.lexeme).join('\\');
+    target.addModuleDependency(moduleName, path);
+    target.addModule(path);
     return stmt.imports.map(function (target) {
-      return getIndent() + 'use ' + path.concat([ target.lexeme ]).join('\\') + ';';
+      return getIndent() + 'use ' + [ phpPath ].concat([ target.lexeme ]).join('\\') + ';';
     }).join('\n');
   }
 
   public function visitModuleStmt(stmt:Stmt.Module):String {
-    moduleName = stmt.path.map(function (f) return f.lexeme).join('.');
+    moduleName = target.resolveModule(stmt.path);
     indent();
     return null;
     // todo: will need to split into seperate files for each export :P
-    // return 'namespace ' + stmt.path.map(function (p) return p.lexeme).join('\\') + ';';
+    return 'namespace ' + stmt.path.map(function (p) return p.lexeme).join('\\') + ';';
   }
 
   public function visitLambdaExpr(expr:Expr.Lambda):String {
@@ -353,24 +340,6 @@ class PhpGenerator
 
   private function tempVar(prefix:String = 'tmp') {
     return '__quirk_' + prefix + (uid++);
-  }
-
-  private function loadModule(path:String) {
-    if (modules.exists(path)) return '';
-    var stmts = parseModule(path);
-    var generator = new PhpGenerator(loader, writer, reporter, modules);
-    var resolver = new PhpResolver(generator);
-    resolver.resolve(stmts);
-    return generator.generate(stmts);
-  }
-
-  private function parseModule(path:String) {
-    var source = loader.load(path);
-    var scanner = new quirk.Scanner(source, path, reporter);
-    var tokens = scanner.scanTokens();
-    var parser = new quirk.Parser(tokens, reporter);
-    var stmts = parser.parse();
-    return stmts;
   }
 
 }
