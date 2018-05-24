@@ -1,8 +1,9 @@
 package quirk.generator;
 
+import sys.io.File;
+import sys.FileSystem;
 import quirk.Token;
 import quirk.ModuleLoader;
-import sys.io.File;
 
 using haxe.io.Path;
 
@@ -40,13 +41,17 @@ class JsModuleLoader implements ModuleLoader {
           .replace(path, mappings.get(pattern))
           .normalize()
           .withExtension(extension);
+        if (!FileSystem.exists(path)) {
+          throw 'The file [${path}] does not exist';
+        }
         return File.getBytes(path).toString();
       }
     }
-    if (path.extension() == '') {
-      path = path.withExtension(extension);
+    path = Path.join([ root, path ]).withExtension(extension);
+    if (!FileSystem.exists(path)) {
+      throw 'The file [${path}] does not exist';
     }
-    return File.getBytes(Path.join([ root, path ])).toString();
+    return File.getBytes(path).toString();
   }
 
 }

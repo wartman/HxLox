@@ -1,6 +1,7 @@
 package quirk;
 
 import sys.io.File;
+import sys.FileSystem;
 
 using haxe.io.Path;
 
@@ -27,10 +28,16 @@ class DefaultModuleLoader implements ModuleLoader {
           .replace(path, mappings.get(pattern))
           .normalize()
           .withExtension(extension);
+        if (!FileSystem.exists(path)) {
+          throw 'The file [${path}] does not exist';
+        }
         return File.getBytes(path).toString();
       }
     }
     path = Path.join([ root, path ]).normalize().withExtension(extension);
+    if (!FileSystem.exists(path)) {
+      throw 'The file [${path}] does not exist';
+    }
     return File.getBytes(path).toString();
   }
 

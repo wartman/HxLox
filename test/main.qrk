@@ -1,7 +1,7 @@
 import Std.Test for Runner
 import Test.Basics as Basics
-import Test.Core as Core
 import Test.Syntax as Syntax
+import Test.Std.Mirror as Mirror 
 import Test.Std.HtmlBuilder for HtmlBuilderTest
 
 var runner = Runner.new()
@@ -14,7 +14,8 @@ runner.
   add(Syntax.FunTest.new()).
   add(Syntax.EnumTest.new()).
   add(Syntax.MethodTest.new()).
-  add(Core.ReflectTest.new()).
+  add(Mirror.ReflectTest.new()).
+  add(Mirror.MetaTest.new()).
   add(HtmlBuilderTest.new())
 
 runner.run()

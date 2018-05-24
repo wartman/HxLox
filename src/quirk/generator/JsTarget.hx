@@ -29,7 +29,7 @@ class JsTarget extends BaseTarget {
     }
     output.push('__quirk.env.main("' + main + '");');
     writer.writeToRoot('!(function (global, undefined) {\n'
-      + output.join('\n') + '\n})(global != null ? global : window);', 'js');
+      + output.join('\n') + '\n})(typeof global != "undefined" ? global : window);', 'js');
   }
 
 }

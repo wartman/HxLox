@@ -1,7 +1,7 @@
-module Test.Core for ReflectTest
+module Test.Std.Mirror for ReflectTest, MetaTest
 
-import Std.Core for Reflect
 import Std.Test for Case
+import Std.Mirror for Reflect, Meta
 
 class ReflectFixture {
   
@@ -23,7 +23,7 @@ class ReflectTest : Case {
   
   @test('Gets the correct type name')
   testGetType() {
-    this.assertEquals(Reflect.getClassName(ReflectTest), 'Test.Core.ReflectTest');
+    this.assertEquals(Reflect.getClassName(ReflectTest), 'Test.Std.Mirror.ReflectTest');
   }
 
   @test('Compares classes correctly')
@@ -41,7 +41,7 @@ class ReflectTest : Case {
     ) 
   }
 
-  @test('Calles constructors correctly')
+  @test('Calls constructors correctly')
   testCallConstructors() {
     var def = Reflect.getConstructor(ReflectFixture, 'defaults')
     this.assertEquals(def().a, 'a')
@@ -50,6 +50,32 @@ class ReflectTest : Case {
     var nu = Reflect.getConstructor(ReflectFixture, 'new')
     this.assertEquals(nu('b').a, 'b')
     this.assertTrue(Reflect.is(nu('b'), ReflectFixture))
+  }
+
+}
+
+@foo
+@bar('value')
+class MetaFixture {
+  
+}
+
+class MetaTest : Case {
+  
+  construct new() {
+    super.new()
+  }
+
+  @test('Gets metadata for types')
+  testTypeMeta() {
+    Meta.getType(MetaFixture).forEach {
+      if (it.name == 'foo') {
+        this.assertEquals(it.values.length, 0)
+      } else {
+        this.assertEquals(it.name, 'bar')
+        this.assertEquals(it.values[0], 'value')
+      }
+    }
   }
 
 }

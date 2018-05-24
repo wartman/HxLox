@@ -18,11 +18,18 @@ class Build {
     interpreter
       .addForeign('Std.Build.Project.buildJs(_)', function (args, f) {
         var settings:Instance = cast(args[0]);
+        var corePaths = Quirk.corePaths;
+        var libs:Map<String, String> = settings.fields.get('libs').fields;
+        for (key in corePaths.keys()) {
+          if (!libs.exists(key)) {
+            libs.set(key, corePaths.get(key));
+          }
+        }
         new JsTarget(
           Std.string(settings.fields.get('main')),
           new JsModuleLoader(
             Path.join([Sys.getCwd(),Std.string(settings.fields.get('src'))]),
-            settings.fields.get('libs').fields
+            libs
           ),
           new ModuleWriter(Path.join([Sys.getCwd(), Std.string(settings.fields.get('dst'))])),
           interpreter.reporter

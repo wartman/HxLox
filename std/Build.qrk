@@ -1,6 +1,7 @@
 module Std.Build for Project, Target, project
 
-import Std.Core for System, Reflect
+import Std.Core for System 
+import Std.Mirror for Reflect
 
 enum Target {
   js = "js"

@@ -4,7 +4,8 @@ module Std.Test for
   Status,
   Case
 
-import Std.Core for System, Reflect, Meta
+import Std.Core for System 
+import Std.Mirror for Reflect, Meta
 
 class Runner {
 

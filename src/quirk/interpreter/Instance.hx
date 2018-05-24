@@ -1,8 +1,10 @@
 package quirk.interpreter;
 
 import quirk.Token;
+import quirk.TokenType;
 import quirk.core.RuntimeError;
 
+using StringTools;
 using quirk.interpreter.Helper;
 
 class Instance implements Object {
@@ -33,7 +35,11 @@ class Instance implements Object {
     if (setter != null) {
       setter.call(interpreter, [ value ]);
     } else {
-      fields.set(name.lexeme, value);
+      // Be sure to remove quotes if `name` is a string.
+      var key:String = name.type.equals(TokString)
+        ? name.lexeme.replace('"', '').replace("'", '')
+        : name.lexeme;
+      fields.set(key, value);
     }
   }
 

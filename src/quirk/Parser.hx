@@ -329,7 +329,7 @@ class Parser {
     
     consume(TokLeftParen, "Expect '(' after 'for'.");
     
-    var initializer:Stmt;
+    var initializer:Array<Stmt>;
     var condition:Expr = null;
     var increment:Expr = null;
 
@@ -342,7 +342,7 @@ class Parser {
       consume(TokIn, "Expect 'in' after identifier");
       var target = expression();
 
-      initializer = new Stmt.Block([
+      initializer = [
         new Stmt.Var(iteratorToken, new Expr.Literal(0), []),
         new Stmt.Var(targetToken, target, []),
         new Stmt.Var(
@@ -354,7 +354,7 @@ class Parser {
           ),
           []
         )
-      ]);
+      ];
       condition = new Expr.Binary(
         new Expr.Variable(iteratorToken),
         new Token(TokLess, '<', '<', previous().pos),
@@ -381,9 +381,9 @@ class Parser {
       if (match([ TokSemicolon ])) {
         initializer = null;
       } else if (match([ TokVar ])) {
-        initializer = varDeclaration();
+        initializer = [ varDeclaration() ];
       } else {
-        initializer = expressionStatement();
+        initializer = [ expressionStatement() ];
       }
 
       if (!check(TokSemicolon)) {
@@ -416,10 +416,7 @@ class Parser {
     body = new Stmt.While(condition, body);
     
     if (initializer != null) {
-      body = new Stmt.Block([
-        initializer,
-        body
-      ]);
+      body = new Stmt.Block(initializer.concat([ body ]));
     }
     
     return body;

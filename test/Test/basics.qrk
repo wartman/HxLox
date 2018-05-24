@@ -1,6 +1,6 @@
 module Test.Basics for ArrayTest, ObjectTest, StringTest, LambdaTest
 
-import Std.Core for Reflect
+import Std.Mirror for Reflect
 import Std.Test for Case
 
 class ArrayTest : Case {

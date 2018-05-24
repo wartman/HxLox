@@ -1,6 +1,6 @@
 module Test.Syntax for FunTest, EnumTest, MethodTest
 
-import Std.Core for Reflect
+import Std.Mirror for Reflect
 import Std.Test for Case
 
 fun inlineReturn() { 'bar' }
