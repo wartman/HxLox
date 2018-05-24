@@ -46,7 +46,7 @@ class JsGenerator
   }
 
   public function visitBlockStmt(stmt:Stmt.Block):String {
-    var out = '{\n';
+    var out = getIndent() + '{\n';
     indent(); 
     out += stmt.statements.map(generateStmt).join('\n') + '\n';
     outdent();
@@ -59,7 +59,7 @@ class JsGenerator
   }
 
   public function visitIfStmt(stmt:Stmt.If):String {
-    var out = getIndent() + 'if (' + generateExpr(stmt.condition) + ')' + generateStmt(stmt.thenBranch);
+    var out = getIndent() + 'if (' + generateExpr(stmt.condition) + ')\n' + generateStmt(stmt.thenBranch);
     if (stmt.elseBranch != null) {
       out += ' else ' + generateStmt(stmt.elseBranch);
     }
@@ -77,16 +77,16 @@ class JsGenerator
   }
 
   public function visitTryStmt(stmt:Stmt.Try):String {
-    var out = getIndent() + 'try ' + generateStmt(stmt.body);
+    var out = getIndent() + 'try\n' + generateStmt(stmt.body);
     if (stmt.caught != null) {
-      out += ' catch (' + stmt.exception.lexeme + ') ' + generateStmt(stmt.caught);
+      out += ' catch (' + stmt.exception.lexeme + ')\n' + generateStmt(stmt.caught);
     }
     return out;
   }
 
   public function visitWhileStmt(stmt:Stmt.While):String {
     return getIndent() + 'while (' + generateExpr(stmt.condition) + ') '
-      + generateStmt(stmt.body);
+      + '\n' + generateStmt(stmt.body);
   }
 
   public function visitVarStmt(stmt:Stmt.Var):String {
@@ -147,7 +147,7 @@ class JsGenerator
   }
 
   public function visitFunStmt(stmt:Stmt.Fun):String {
-    return 'function ' + safeVar(stmt.name) + genParams(stmt.params) + ' ' 
+    return 'function ' + safeVar(stmt.name) + genParams(stmt.params) + '\n' 
       + genBlock(stmt.body);
   }
 
@@ -251,7 +251,8 @@ class JsGenerator
         outdent();
         null;
       case Stmt.FunKind.FunConstructor:
-        target + '.' + method.name.lexeme + ' = function ' + genParams(method.params) + '{\n' 
+        target + '.' + method.name.lexeme + ' = function ' + genParams(method.params) + '\n' 
+          + getIndent() + '{\n' 
           + indent().getIndent() + 'var instance = new ' + target + '();\n'
           + getIndent() + 'instance.' + method.name.lexeme + genParams(method.params) + ';\n'
           + getIndent() + 'return instance;\n'
@@ -334,7 +335,7 @@ class JsGenerator
   }
 
   private function genBlock(stmts:Array<Stmt>) {
-    var out = '{\n';
+    var out = getIndent() + '{\n';
     indent();
     out += stmts.map(generateStmt).join('\n'); 
     outdent();

@@ -9,6 +9,7 @@ class Parser {
   private var tokens:Array<Token>;
   private var current:Int = 0;
   private var reporter:ErrorReporter;
+  private var uid:Int = 0;
 
   public function new(tokens:Array<Token>, reporter:ErrorReporter) {
     this.tokens = tokens;
@@ -66,7 +67,8 @@ class Parser {
     var params:Array<Token> = functionParams();
     typeHint();
     consume(TokLeftBrace, 'Expect \'{\' before ${kind} body');
-    var body:Array<Stmt> = block();
+    var body:Array<Stmt> = functionBody();
+
     return new Stmt.Fun(name, params, body, meta, kind);
   }
 
@@ -83,6 +85,19 @@ class Parser {
     }
     consume(TokRightParen, 'Expect \')\' after parameters');
     return params; 
+  }
+
+  private function functionBody():Array<Stmt> {
+    var body:Array<Stmt> = null;
+    if (!check(TokNewline) && !check(TokReturn)) {
+      // Treat the next expression as a return.
+      body = [ new Stmt.Return(peek(), expression()) ];
+      ignoreNewlines();
+      consume(TokRightBrace, 'Inline functions must contain only one expression.');
+    } else {
+      body = block();
+    }
+    return body;
   }
 
   private function functionDeclaration(kind:Stmt.FunKind, ?meta:Array<Expr>):Stmt {
@@ -201,22 +216,22 @@ class Parser {
     var name = consume(TokIdentifier, 'Expect an identifier');
     var fun:Stmt.Fun = null;
     if (match([ TokLeftBrace ])) {
-      fun = new Stmt.Fun(name, [], block(), meta, Stmt.FunKind.FunGetter);
+      fun = new Stmt.Fun(name, [], functionBody(), meta, Stmt.FunKind.FunGetter);
     } else if (check(TokColon)) {
       typeHint();
       consume(TokLeftBrace, "Expect a '{' after a getter type hint");
-      fun = new Stmt.Fun(name, [], block(), meta, Stmt.FunKind.FunGetter);
+      fun = new Stmt.Fun(name, [], functionBody(), meta, Stmt.FunKind.FunGetter);
     } else if (match([ TokEqual ])) {
       var param = consume(TokIdentifier, 'Expect an identifier');
       typeHint();
       consume(TokLeftBrace, 'Expect an `{` after the setter value');
-      fun = new Stmt.Fun(name, [ param ], block(), meta, Stmt.FunKind.FunSetter);
+      fun = new Stmt.Fun(name, [ param ], functionBody(), meta, Stmt.FunKind.FunSetter);
     } else {
       consume(TokLeftParen, "Expect '(' after method name");
       var params = functionParams();
       typeHint();
       consume(TokLeftBrace, "Expect '{' after argument list");
-      fun = new Stmt.Fun(name, params, block(), meta, Stmt.FunKind.FunMethod);
+      fun = new Stmt.Fun(name, params, functionBody(), meta, Stmt.FunKind.FunMethod);
     }
     ignoreNewlines();
     return fun;
@@ -315,26 +330,75 @@ class Parser {
     consume(TokLeftParen, "Expect '(' after 'for'.");
     
     var initializer:Stmt;
-    if (match([ TokSemicolon ])) {
-      initializer = null;
-    } else if (match([ TokVar ])) {
-      initializer = varDeclaration();
-    } else {
-      initializer = expressionStatement();
-    }
-    
     var condition:Expr = null;
-    if (!check(TokSemicolon)) {
-      condition = expression();
-    }
-    consume(TokSemicolon, "Expect ';' after loop condition.");
-    ignoreNewlines();
-    
     var increment:Expr = null;
-    if (!check(TokRightParen)) {
-      increment = expression();
+
+    if (check(TokIdentifier) && checkNext(TokIn)) {
+      var name = consume(TokIdentifier, "Expect an identifier in a 'for ... in ...' statement");
+      var iteratorName = tempVar('iter');
+      var iteratorToken = new Token(TokIdentifier, iteratorName, iteratorName, previous().pos);
+      var targetName = tempVar('iter_target');
+      var targetToken = new Token(TokIdentifier, targetName, targetName, previous().pos);
+      consume(TokIn, "Expect 'in' after identifier");
+      var target = expression();
+
+      initializer = new Stmt.Block([
+        new Stmt.Var(iteratorToken, new Expr.Literal(0), []),
+        new Stmt.Var(targetToken, target, []),
+        new Stmt.Var(
+          name,
+          new Expr.SubscriptGet(
+            iteratorToken,
+            new Expr.Variable(targetToken),
+            new Expr.Variable(iteratorToken)
+          ),
+          []
+        )
+      ]);
+      condition = new Expr.Binary(
+        new Expr.Variable(iteratorToken),
+        new Token(TokLess, '<', '<', previous().pos),
+        new Expr.Get(new Expr.Variable(targetToken), new Token(TokIdentifier, 'length', 'length', previous().pos))
+      );
+      increment = new Expr.Assign(
+        name,
+        new Expr.SubscriptGet(
+          previous(),
+          new Expr.Variable(targetToken),
+          new Expr.Assign(
+            iteratorToken,
+            new Expr.Binary(
+              new Expr.Variable(iteratorToken),
+              new Token(TokPlus, '+', '+', previous().pos),
+              new Expr.Literal(1)
+            )
+          )
+        )
+      );
+
+    } else {
+    
+      if (match([ TokSemicolon ])) {
+        initializer = null;
+      } else if (match([ TokVar ])) {
+        initializer = varDeclaration();
+      } else {
+        initializer = expressionStatement();
+      }
+
+      if (!check(TokSemicolon)) {
+        condition = expression();
+      }
+      consume(TokSemicolon, "Expect ';' after loop condition.");
+      ignoreNewlines();
+      
+      if (!check(TokRightParen)) {
+        increment = expression();
+      }
+
     }
-    consume(TokRightParen, "Expect ')' after loop condition.");
+
+    consume(TokRightParen, "Expect ')' after loop definition.");
     ignoreNewlines();
     
     var body = statement();
@@ -698,10 +762,9 @@ class Parser {
   private function objectOrLambda():Expr {
     var isInline:Bool = !check(TokNewline);
     ignoreNewlines();
-    if (check(TokIdentifier) && checkNext(TokColon)) {
-      return objectLiteral();
-    }
-    if (check(TokRightBrace)) {
+    if ((check(TokIdentifier) && checkNext(TokColon))
+        || (check(TokString) && checkNext(TokColon))
+        || check(TokRightBrace)) {
       return objectLiteral();
     }
     return shortLambda(isInline);
@@ -753,7 +816,11 @@ class Parser {
     if (!check(TokRightBrace)) {
       do {
         ignoreNewlines();
-        keys.push(consume(TokIdentifier, "Expect identifiers for object keys"));
+        if (check(TokString)) {
+          keys.push(consume(TokString, "Expect identifiers or strings for object keys"));
+        } else {
+          keys.push(consume(TokIdentifier, "Expect identifiers or strings for object keys"));
+        }
         consume(TokColon, "Expect colons after object keys");
         ignoreNewlines();
         values.push(expression());
@@ -878,6 +945,10 @@ class Parser {
         return;
       }
     }
+  }
+
+  private function tempVar(prefix:String = 'tmp') {
+    return '__quirk_' + prefix + (uid++);
   }
 
 }

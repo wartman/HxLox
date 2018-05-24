@@ -8,23 +8,29 @@ class DefaultModuleLoader implements ModuleLoader {
 
   private var root:String;
   private var extension:String = 'qrk';
+  private var mappings:Map<String, String>;
 
-  public function new(?root:String) {
-    if (root == null) {
-      root = Sys.getCwd();
-    }
-    this.root = root;
+  public function new(?root:String, ?mappings:Map<String, String>) {
+    this.root = root != null ? root : Sys.getCwd();
+    this.mappings = mappings != null? mappings : new Map();
   }
 
   public function find(tokens:Array<Token>):String {
-    var path = tokens.map(function (p) return p.lexeme).join('/');
-    return Path.join([ root, path ]).normalize().withExtension(extension);
+    return tokens.map(function (p) return p.lexeme).join('/');
   }
 
   public function load(path:String):String {
-    if (path.extension() == '') {
-      path = path.withExtension(extension);
+    for (pattern in mappings.keys()) {
+      var re = new EReg('^' + pattern, 'i');
+      if (re.match(path)) {
+        path = re
+          .replace(path, mappings.get(pattern))
+          .normalize()
+          .withExtension(extension);
+        return File.getBytes(path).toString();
+      }
     }
+    path = Path.join([ root, path ]).normalize().withExtension(extension);
     return File.getBytes(path).toString();
   }
 

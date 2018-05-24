@@ -188,7 +188,7 @@ class Case {
     }
   }
 
-  assertEquals(expected, actual) {
+  assertEquals(actual, expected) {
     this.currentTest.done = true
     if (expected != actual) {
       this.currentTest.success = false

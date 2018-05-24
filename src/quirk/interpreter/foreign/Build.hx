@@ -46,6 +46,10 @@ class Build {
         return null;
       })
       .addForeign('Std.Build.Project.interpret(_)', function (args, f) {
+        var settings:Instance = cast(args[0]);
+        var root = Path.join([ Sys.getCwd(), settings.fields.get('src') ]);
+        var path = settings.fields.get('main');
+        Quirk.run(root, path);
         return null;
       });
   }

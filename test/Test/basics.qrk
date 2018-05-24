@@ -61,6 +61,16 @@ class ArrayTest : Case {
     this.assertEquals(reduced, 6)
   }
 
+  @test('For/in statements')
+  testForIn() {
+    var arr = [ 1, 2, 3 ]
+    var actual = 0
+    for (value in arr) {
+      actual = actual + value
+    }
+    this.assertEquals(actual, 6)
+  }
+
 }
 
 class ObjectTest : Case {
@@ -105,6 +115,30 @@ class ObjectTest : Case {
     }
     this.assertEquals(obj.a, 'a')
     this.assertEquals(obj.b.c.c[0], 'c')
+  }
+
+  @test('Strings work as object keys')
+  testKeys() {
+    var obj = {
+      "foo": 'foo',
+      "foo bin bar": 'foo bin bar'
+    }
+    this.assertEquals(obj['foo'], 'foo')
+    this.assertEquals(obj['foo bin bar'], 'foo bin bar')
+  }
+
+  @test('For/in statements')
+  testForIn() {
+    var obj = {
+      a: 'a',
+      b: 'b'
+    }
+    var expected = ''
+    for (key in Reflect.getFieldNames(obj)) {
+      var value = obj[key]
+      expected = expected + value
+    }
+    this.assertEquals(expected, 'ab')
   }
 
 }

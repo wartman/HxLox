@@ -11,7 +11,8 @@ class JsModuleLoader implements ModuleLoader {
   // Resolve js implementation paths. These refer to the actual locations
   // of the files, NOT the module name.
   private static var implementations:Map<String, String> = [ 
-    'Std/Core' => 'Std/Js/Core'
+    'Std/Core' => 'Std/Js/Core',
+    'Std/Mirror' => 'Std/Js/Mirror'
   ];
   private var mappings:Map<String, String>;
   private var root:String;
@@ -35,7 +36,7 @@ class JsModuleLoader implements ModuleLoader {
     for (pattern in mappings.keys()) {
       var re = new EReg('^' + pattern, 'i');
       if (re.match(path)) {
-        var path = re
+        path = re
           .replace(path, mappings.get(pattern))
           .normalize()
           .withExtension(extension);

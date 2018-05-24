@@ -24,8 +24,8 @@ project {
   //   it.dst = 'bin/__node'
   // }
 
-  // it.sub {
-  //  it.target = Target.interpret
-  // }
+  it.sub {
+    it.target = Target.interpret
+  }
 
 }

@@ -12,14 +12,14 @@ class Array {
     this.values = values;
   }
 
-  length {
-    return this.__length() 
-  }
+  length { this.__length() }
 
-  // We don't allow foreign properties -- at least not yet
-  // -- so we're using this awkward workaround.
+  /// We don't allow foreign properties -- at least not yet
+  /// -- so we're using this awkward workaround.
   foreign __length()
 
+  /// `__offsetGet` and `__offsetSet` are special methods used
+  /// only by the interpreter for subscripts.
   foreign __offsetGet(i)
 
   foreign __offsetSet(i, value)

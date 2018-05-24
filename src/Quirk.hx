@@ -26,6 +26,9 @@ class Quirk {
 
   public static var hadError:Bool = false;
   public static var hadRuntimeError:Bool = false;
+  public static var corePaths = [
+    'Std' => Path.join([ Sys.programPath(), '../../std' ]).normalize()
+  ];
 
   public static function main() {
     var args = Sys.args();
@@ -52,15 +55,15 @@ class Quirk {
 
   private static function genFile(main:String, dest:String, kind:GenKind) {
     var reporter = new DefaultErrorReporter();
-    var writer = new ModuleWriter(haxe.io.Path.join([ Sys.getCwd(), dest ]));
+    var writer = new ModuleWriter(Path.join([ Sys.getCwd(), dest ]));
 
     switch (kind) {
       case GenJs:
-        var loader = new JsModuleLoader(Sys.getCwd());
+        var loader = new JsModuleLoader(Sys.getCwd(), corePaths);
         var target = new JsTarget(main, loader, writer, reporter);
         target.write();
       case GenJsNode:
-        var loader = new JsModuleLoader(Sys.getCwd());
+        var loader = new JsModuleLoader(Sys.getCwd(), corePaths);
         var target = new JsNodeTarget(main, loader, writer, reporter);
         target.write();
       case GenPhp:
@@ -84,9 +87,9 @@ class Quirk {
     }
   }
 
-  private static function run(root:String, path:String = '<unknown>') {
+  public static function run(root:String, path:String = '<unknown>') {
     var reporter = new DefaultErrorReporter();
-    var loader = new DefaultModuleLoader(root);
+    var loader = new DefaultModuleLoader(root, corePaths);
     var source = loader.load(path);
     var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();

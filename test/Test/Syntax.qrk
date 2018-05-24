@@ -1,7 +1,22 @@
-module Test.Syntax for EnumTest, MethodTest
+module Test.Syntax for FunTest, EnumTest, MethodTest
 
 import Std.Core for Reflect
 import Std.Test for Case
+
+fun inlineReturn() { 'bar' }
+
+class FunTest : Case {
+  
+  construct new() {
+    super.new()
+  }
+
+  @test('inline returns work')
+  testInline() {
+    this.assertEquals(inlineReturn(), 'bar')
+  }
+
+}
 
 // Note: I intend to make enums way more useful later. This
 // is just a super simple starting point.
@@ -46,8 +61,11 @@ class MethodTypes {
   // Instance
   fooBar(a) { return a + 'foo' }
 
-  // Getter
-  bar { return this.values['bar'] }
+  // Getter with automatic return.
+  // 
+  // Any function with one expression that doesn't have a
+  // newline will automatically return.
+  bar { this.values['bar'] }
 
   // Setter
   bar = value { this.values['bar'] = value }

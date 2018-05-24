@@ -11,6 +11,7 @@ runner.
   add(Basics.ObjectTest.new()).
   add(Basics.StringTest.new()).
   add(Basics.LambdaTest.new()).
+  add(Syntax.FunTest.new()).
   add(Syntax.EnumTest.new()).
   add(Syntax.MethodTest.new()).
   add(Core.ReflectTest.new()).
