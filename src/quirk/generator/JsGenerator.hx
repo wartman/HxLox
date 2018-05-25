@@ -113,7 +113,10 @@ class JsGenerator
 
   public function visitLiteralExpr(expr:Expr.Literal):String {
     return Std.is(expr.value, String)
-      ? '"' + Std.string(expr.value).replace('"', '\\"') + '"'
+      ? '"' + Std.string(expr.value)
+        .replace('"', '\\"')
+        .replace('\r', '')
+        .replace('\n', '\\n') + '"'
       : expr.value;
   }
 
@@ -271,7 +274,11 @@ class JsGenerator
     var dep = target.resolveModule(stmt.path);
 
     target.addModuleDependency(moduleName, dep);
-    if (!isNpm) target.addModule(dep);
+    if (isNpm) {
+      target.addResource(dep);
+    } else { 
+      target.addModule(dep);
+    }
 
     var tmp = tempVar('req');
     var out = [ 'var $tmp = require("$dep")' ];

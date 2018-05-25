@@ -69,6 +69,13 @@ class BaseTarget implements Target {
     modules.get(moduleName).generated = generate(moduleName, stmts); 
   }
 
+  public function addResource(name:String, ?moduleName:String) {
+    if (moduleName == null) {
+      moduleName = name;
+    }
+    modules.set(moduleName, { generated: loader.load(name), deps: [] });
+  }
+
   public function write():Void {
     throw 'Not implemented in BaseTarget.';
   }

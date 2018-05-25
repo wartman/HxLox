@@ -58,6 +58,7 @@ class Project {
       src: 'src',
       main: null,
       libs: {},
+      resources: {}, // does nothing right now
       targets: []
     })
   }
@@ -89,6 +90,12 @@ class Project {
   libs = value {
     Reflect.getFieldNames(value).forEach {
       this.settings.libs[it] = value[it]
+    }
+  }
+
+  resources = value {
+    Reflect.getFieldNames(value).forEach {
+      this.settings.resources[it] = value[it]
     }
   }
 

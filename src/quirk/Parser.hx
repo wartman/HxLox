@@ -20,7 +20,8 @@ class Parser {
     var stmts:Array<Stmt> = [];
     ignoreNewlines();
     while (!isAtEnd()) {
-      stmts.push(declaration());
+      var stmt = declaration();
+      if (stmt != null) stmts.push(stmt);
     }
     return stmts;
   }
@@ -839,7 +840,7 @@ class Parser {
         if (!check(TokRightParen)) {
           items = parseList(TokComma, expression);
         }
-        consume(TokRightParen, "Expected ')'");
+        consume(TokRightParen, "Expect ')' at the end of metadata entries");
       }
       ignoreNewlines();
       meta.push(new Expr.Metadata(name, items, null));
@@ -859,7 +860,9 @@ class Parser {
 
   private function consume(type:TokenType, message:String) {
     if (check(type)) return advance();
-    throw error(peek(), message);
+    // Sorta hacky, but makes error messages more useful.
+    var tok = peek().type.equals(TokNewline) ? previous() : peek();
+    throw error(tok, message);
   }
 
   private function check(type:TokenType):Bool {

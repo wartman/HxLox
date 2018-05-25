@@ -24,7 +24,7 @@ class JsTarget extends BaseTarget {
       var deps = entry.deps;
       var body = entry.generated;
       output.push('__quirk.env.define("' + name + '", ['
-        + deps.map(function (d) return '"$d"').join(',') + '], function (require, module) {\n'
+        + deps.map(function (d) return '"$d"').join(',') + '], function (require, module, exports) {\n'
         + body + '\n});');
     }
     output.push('__quirk.env.main("' + main + '");');

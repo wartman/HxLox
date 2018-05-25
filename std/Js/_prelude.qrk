@@ -122,7 +122,7 @@ class Module {
     this.env = env
     this.deps = deps
     this.factory = {
-      factory({ this.require(it) }, this)
+      factory({ this.require(it) }, this, this.exports)
     }
     this.state = ModuleState.Pending
     this.exports = {}

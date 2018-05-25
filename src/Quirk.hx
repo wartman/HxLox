@@ -4,7 +4,8 @@ import sys.io.File;
 import quirk.Token;
 import quirk.Parser;
 import quirk.Scanner;
-import quirk.DefaultErrorReporter;
+// import quirk.DefaultErrorReporter;
+import quirk.VisualErrorReporter;
 import quirk.DefaultModuleLoader;
 import quirk.core.RuntimeError;
 import quirk.interpreter.Resolver;
@@ -54,16 +55,18 @@ class Quirk {
   }
 
   private static function genFile(main:String, dest:String, kind:GenKind) {
-    var reporter = new DefaultErrorReporter();
+    // var reporter = new DefaultErrorReporter();
     var writer = new ModuleWriter(Path.join([ Sys.getCwd(), dest ]));
 
     switch (kind) {
       case GenJs:
         var loader = new JsModuleLoader(Sys.getCwd(), corePaths);
+        var reporter = new VisualErrorReporter(loader);
         var target = new JsTarget(main, loader, writer, reporter);
         target.write();
       case GenJsNode:
         var loader = new JsModuleLoader(Sys.getCwd(), corePaths);
+        var reporter = new VisualErrorReporter(loader);
         var target = new JsNodeTarget(main, loader, writer, reporter);
         target.write();
       case GenPhp:
@@ -88,8 +91,8 @@ class Quirk {
   }
 
   public static function run(root:String, path:String = '<unknown>') {
-    var reporter = new DefaultErrorReporter();
     var loader = new DefaultModuleLoader(root, corePaths);
+    var reporter = new VisualErrorReporter(loader);
     var source = loader.load(path);
     var scanner = new Scanner(source, path, reporter);
     var tokens = scanner.scanTokens();

@@ -70,6 +70,18 @@ class Reflect {
     return Object.keys(target)
   }
 
+  static isFunction(target) {
+    return typeof(target) == 'function'
+  }
+
+  static isString(target) {
+    return typeof(target) == 'string'
+  }
+
+  static isObject(target) {
+    return typeof(target) == 'object'
+  }
+
 }
 
 class Meta {

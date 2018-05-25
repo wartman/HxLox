@@ -37,10 +37,10 @@ class JsModuleLoader implements ModuleLoader {
     for (pattern in mappings.keys()) {
       var re = new EReg('^' + pattern, 'i');
       if (re.match(path)) {
-        path = re
-          .replace(path, mappings.get(pattern))
-          .normalize()
-          .withExtension(extension);
+        path = re.replace(path, mappings.get(pattern)).normalize();
+        if (path.extension() == '') {
+          path = path.withExtension(extension);
+        }
         if (!FileSystem.exists(path)) {
           throw 'The file [${path}] does not exist';
         }
