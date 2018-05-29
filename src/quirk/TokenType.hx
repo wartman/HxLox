@@ -64,6 +64,7 @@ enum TokenType {
   // TokPlusEqual;
 
   // Other
+  TokTemplateTag;
   TokIdentifier;
   TokString;
   TokNumber;

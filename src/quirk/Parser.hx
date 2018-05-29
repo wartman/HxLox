@@ -651,30 +651,30 @@ class Parser {
     return new Expr.Call(callee, paren, arguments);
   }
 
-  // private function taggedTemplate(callee:Expr):Expr {
-  //   var firstTok = peek();
-  //   var parts:Array<Expr> = [];
-  //   var placeholders:Array<Expr> = [
-  //     new Expr.Literal('') // Required
-  //   ];
+  private function taggedTemplate(callee:Expr):Expr {
+    var firstTok = peek();
+    var parts:Array<Expr> = [];
+    var placeholders:Array<Expr> = [
+      new Expr.Literal('') // Required
+    ];
 
-  //   // Note: Interpolated strings end on a `TokString`
-  //   if (!check(TokString)) {
-  //     do {
-  //       if (match([ TokInterpolation ])) {
-  //         parts.push(new Expr.Literal(previous().literal));
-  //       } else {
-  //         placeholders.push(expression());
-  //       }
-  //     } while (!check(TokString) && !isAtEnd());
-  //   }
-  //   parts.push(primary());
+    // Note: Interpolated strings end on a `TokString`
+    if (!check(TokString)) {
+      do {
+        if (match([ TokInterpolation ])) {
+          parts.push(new Expr.Literal(previous().literal));
+        } else {
+          placeholders.push(expression());
+        }
+      } while (!check(TokString) && !isAtEnd());
+    }
+    parts.push(primary());
 
-  //   return new Expr.Call(callee, firstTok, [
-  //     new Expr.ArrayLiteral(firstTok, parts),
-  //     new Expr.ArrayLiteral(firstTok, placeholders)
-  //   ]);
-  // }
+    return new Expr.Call(callee, firstTok, [
+      new Expr.ArrayLiteral(firstTok, parts),
+      new Expr.ArrayLiteral(firstTok, placeholders)
+    ]);
+  }
 
   private function interpolation(expr:Expr):Expr {
     while (!isAtEnd()) {
@@ -724,6 +724,10 @@ class Parser {
 
     if (match([ TokIdentifier ])) {
       return new Expr.Variable(previous());
+    }
+
+    if (match([ TokTemplateTag ])) {
+      return taggedTemplate(new Expr.Variable(previous()));
     }
 
     if (match([ TokLeftParen ])) {

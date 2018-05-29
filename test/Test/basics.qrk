@@ -163,15 +163,15 @@ class StringTest : Case {
     this.assertEquals('start ${ foo + 'ish' } | ${ bar } end', 'start fooish | bar end')
   }
 
-  //  @test('Tagged templates')
-  //  testTaggedTemplate() {
-  //    var tpl = { | parts, placeholders | parts.reduce({| result, part, i | 
-  //      return result + placeholders[i] + '|' + part  
-  //    }, '') }
-  //    var foo = 'foo'
-  //    var res = tpl'start ${ foo } end'
-  //    this.assertEquals(res, '|start foo| end')
-  //  }
+  @test('Tagged templates')
+  testTaggedTemplate() {
+    var tpl = { | parts, placeholders | parts.reduce({| result, part, i | 
+      return result + placeholders[i] + '|' + part  
+    }, '') }
+    var foo = 'foo'
+    var res = tpl'start ${ foo } end'
+    this.assertEquals(res, '|start foo| end')
+  }
 
 }
 

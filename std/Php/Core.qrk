@@ -1,4 +1,4 @@
-class Std.Core for Reflect, System, Meta
+module Std.Core for Reflect, System, Meta
 
 // Required to trick the compiler into handling
 // functions correctly?

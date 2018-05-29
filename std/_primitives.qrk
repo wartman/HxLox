@@ -1,6 +1,6 @@
 class Exception {
 
-  init(message) {
+  construct new(message) {
     this.message = message
   }
 
