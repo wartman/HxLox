@@ -13,7 +13,8 @@ class JsModuleLoader implements ModuleLoader {
   // of the files, NOT the module name.
   private static var implementations:Map<String, String> = [ 
     'Std/Core' => 'Std/Js/Core',
-    'Std/Mirror' => 'Std/Js/Mirror'
+    'Std/Mirror' => 'Std/Js/Mirror',
+    'Std/RegExp' => 'Std/Js/RegExp'
   ];
   private var mappings:Map<String, String>;
   private var root:String;

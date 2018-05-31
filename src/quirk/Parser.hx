@@ -51,7 +51,6 @@ class Parser {
       initializer = expression();
     }
     expectEndOfStatement();
-    // consume(TokSemicolon, "Expect ';' after value.");
     return new Stmt.Var(name, initializer, meta);
   }
 
@@ -654,9 +653,7 @@ class Parser {
   private function taggedTemplate(callee:Expr):Expr {
     var firstTok = peek();
     var parts:Array<Expr> = [];
-    var placeholders:Array<Expr> = [
-      new Expr.Literal('') // Required
-    ];
+    var placeholders:Array<Expr> = [];
 
     // Note: Interpolated strings end on a `TokString`
     if (!check(TokString)) {

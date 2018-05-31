@@ -50,6 +50,7 @@ class Interpreter
     quirk.interpreter.foreign.Core.register(this);
     quirk.interpreter.foreign.Mirror.register(this);
     quirk.interpreter.foreign.Build.register(this);
+    quirk.interpreter.foreign.RegExp.register(this);
   }
 
   public function interpret(stmts:Array<Stmt>) {

@@ -1,0 +1,12 @@
+module Std.RegExp for RegExp
+
+class RegExp {
+
+  construct new(pattern, flags) {
+    this.pattern = pattern
+    this.flags = flags
+  }
+
+  foreign replace(value, by)
+
+}

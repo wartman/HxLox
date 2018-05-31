@@ -1,0 +1,18 @@
+module Test.Std.RegExp for RegExpTest
+
+import Std.Test for Case
+import Std.RegExp for RegExp
+
+class RegExpTest : Case {
+
+  construct new() {
+    super.new()
+  }
+
+  @test('Replaces matching strings')
+  testReplace() {
+    var re = RegExp.new('a', 'g')
+    this.assertEquals(re.replace('aaaa', 'b'), 'bbbb')
+  }  
+
+}

@@ -13,6 +13,8 @@ class Reflect {
   static getClassName(target) {
     if (_toString.call(target) == '[object Array]') {
       return 'Array'
+    } else if (_toString.call(target) == '[object String]') {
+      return 'String'
     }
     // todo: more primitive checks
     return target.__name

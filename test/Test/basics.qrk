@@ -166,11 +166,21 @@ class StringTest : Case {
   @test('Tagged templates')
   testTaggedTemplate() {
     var tpl = { | parts, placeholders | parts.reduce({| result, part, i | 
-      return result + placeholders[i] + '|' + part  
+      var value = placeholders[i - 1]
+      if (!value) value = ''
+      return result + value + '|' + part  
     }, '') }
     var foo = 'foo'
     var res = tpl'start ${ foo } end'
     this.assertEquals(res, '|start foo| end')
+  }
+
+  @test('Interpolation works with objects and lambdas')
+  testBrackets() {
+    var runLambda = { it() }
+    var extractFoo = { it.foo }
+    var actual = 'lambda: ${ runLambda { 'ok' } } | object: ${ extractFoo({foo: 'ok'}) }'
+    this.assertEquals(actual, 'lambda: ok | object: ok')
   }
 
 }

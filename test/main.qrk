@@ -3,6 +3,7 @@ import Test.Basics as Basics
 import Test.Syntax as Syntax
 import Test.Std.Mirror as Mirror 
 import Test.Std.HtmlBuilder for HtmlBuilderTest
+import Test.Std.RegExp for RegExpTest
 
 var runner = Runner.new()
 
@@ -16,6 +17,7 @@ runner.
   add(Syntax.MethodTest.new()).
   add(Mirror.ReflectTest.new()).
   add(Mirror.MetaTest.new()).
+  add(RegExpTest.new()).
   add(HtmlBuilderTest.new())
 
 runner.run()

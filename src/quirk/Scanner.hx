@@ -172,6 +172,7 @@ class Scanner {
 
   private function interpolatedString(quote:String = '"', depth:Int) {
     depth = depth + 1;
+    var brackets = 1;
     if (depth > 6) {
       reporter.report({
         line: line,
@@ -179,9 +180,19 @@ class Scanner {
         file: file
       }, '', 'Interpolation too deep: only 5 levels allowed');
     }
-    while (peek() != '}' && !isAtEnd()) {
+
+    while (brackets > 0 && !isAtEnd()) {
       start = current;
       scanToken();
+      // Need to do this so that we can have lambdas and
+      // object literals inside interpolations. Otherwise,
+      // ANY `}` will stop this loop. 
+      if (peek() == '{') {
+        brackets += 1;
+      }
+      if (peek() == '}') {
+        brackets -= 1;
+      }
     }
     start = current;
     // Continue parsing.

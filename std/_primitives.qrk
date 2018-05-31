@@ -91,7 +91,7 @@ class String {
 
 }
 
-class RegEx {
+class RegExp {
   
   construct new(pattern, flags) {
     this.pattern = pattern

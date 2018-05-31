@@ -266,7 +266,9 @@ class JsGenerator
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    // Allow `@require` to override default paths
+    
+    // hardcoded behavior for now -- replace with something
+    // better soon
     var isNpm:Bool = stmt.meta.find(function (m) {
       var meta:Expr.Metadata = cast m;
       return meta.name.lexeme == 'npm';
@@ -314,8 +316,7 @@ class JsGenerator
   }
 
   public function visitMetadataExpr(expr:Expr.Metadata):String {
-    // capture meta?
-    return '{ name: "' + expr.name.lexeme + '", values: [' + expr.args.map(generateExpr).join(',') + '] }';
+    return generateExpr(expr.expr); 
   }
 
   public function visitAssignExpr(expr:Expr.Assign):String {
@@ -365,10 +366,15 @@ class JsGenerator
     var out = '__quirk.addMeta(' + target + ', {';
     out += [ 
       for (key in data.keys()) 
-        getIndent() + '"' + key + '": [' + data.get(key).map(generateExpr).join(', ') + ']' 
+        getIndent() + '"' + key + '": [' + data.get(key).map(getMetaEntry).join(', ') + ']' 
     ].join(', ');
     out += '});';
     append.push(out);
+  }
+
+  private function getMetaEntry(expr:Expr) {
+    var entry:Expr.Metadata = cast expr;
+    return '{ name: "' + entry.name.lexeme + '", values: [' + entry.args.map(generateExpr).join(',') + '] }';
   }
 
   private function getIndent() {

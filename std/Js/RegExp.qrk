@@ -1,0 +1,16 @@
+module Std.RegExp for RegExp
+
+var JsRegExp = global.RegExp
+
+class RegExp {
+
+  construct new(pattern, flags) {
+    // sorta hacky :P
+    this.proxy = JsRegExp.call(Object.create(JsRegExp.prototype), pattern, flags)
+  }
+
+  replace(value, by) {
+    return value.replace(this.proxy, by)
+  }
+
+}
