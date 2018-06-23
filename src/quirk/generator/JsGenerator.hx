@@ -17,17 +17,24 @@ class JsGenerator
 {
 
   private static var reserved:Array<String> = [
-    'new', 'default'
+    'new', 'default', 'delete'
   ];
   private var target:Target;
   private var uid:Int = 0;
   private var indentLevel:Int = 0;
   private var append:Array<String> = [];
   private var moduleName:String = null;
+  private var currentModule:Array<Token>;
+  private var currentClass:String = null;
 
   public function new(target:Target, ?moduleName:String) {
     this.target = target;
     this.moduleName = moduleName;
+    if (moduleName != null) {
+      currentModule = moduleName
+        .split('/')
+        .map(function (l) return new quirk.Token(quirk.TokenType.TokIdentifier, l, l, { line: 0, offset: 0, file: moduleName }));
+    }
   }
 
   public function generate(stmts:Array<Stmt>):String {
@@ -138,7 +145,7 @@ class JsGenerator
   }
 
   public function visitSuperExpr(expr:Expr.Super):String {
-    return 'this.__super.' + expr.method.lexeme + '.bind(this)'; // maybe???
+    return currentClass + '.__super.' + expr.method.lexeme + '.bind(this)'; // maybe???
   }
 
   public function visitThisExpr(expr:Expr.This):String {
@@ -156,6 +163,7 @@ class JsGenerator
 
   public function visitClassStmt(stmt:Stmt.Class):String {
     var name = stmt.name.lexeme;
+    currentClass = name;
     var fullName = moduleName == null
       ? name
       : moduleName.replace('/', '.') + '.' + name;
@@ -177,7 +185,7 @@ class JsGenerator
 
     if (stmt.superclass != null) {
       out += '__quirk.extend(' + name + ', ' + generateExpr(stmt.superclass) + ');\n';
-      out += name + '.prototype.__super = ' + generateExpr(stmt.superclass) + '.prototype;\n'; 
+      out += name + '.__super = ' + generateExpr(stmt.superclass) + '.prototype;\n'; 
     }
 
     out += name + '.__name = "' + fullName + '";\n';
@@ -209,7 +217,8 @@ class JsGenerator
       constructors.map(function (c) return '"' + c + '"').join(', ')
     + ']);';
 
-    addMeta(name, metaList);
+    out += '\n' + genMeta(name, metaList);
+    currentClass = null;
 
     return out;
   }
@@ -261,25 +270,34 @@ class JsGenerator
           + getIndent() + 'return instance;\n'
           + outdent().getIndent() + '}\n'
         + getIndent() + target + '.prototype.' + method.name.lexeme + ' = ' + visitFunStmt(method);
-      default: target + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
+      default: 
+        target + '.' + method.name.lexeme + ' = ' + visitFunStmt(method);
     }
   }
 
   public function visitImportStmt(stmt:Stmt.Import):String {
-    
     // hardcoded behavior for now -- replace with something
     // better soon
+    var npmPath:String = null;
     var isNpm:Bool = stmt.meta.find(function (m) {
       var meta:Expr.Metadata = cast m;
-      return meta.name.lexeme == 'npm';
+      if (meta.name.lexeme == 'npm') {
+        if (meta.args.length > 0) {
+          var arg = meta.args[0];
+          if (Std.is(arg, Expr.Literal)) {
+            npmPath = (cast arg:Expr.Literal).value;
+          }
+        }
+        return true;
+      }
+      return false;
     }) != null;
-    var dep = target.resolveModule(stmt.path);
+    var dep = npmPath != null ? npmPath : target.resolveModule(stmt.path, isNpm ? null : currentModule);
+    var file = target.resolveFile(stmt.path);
 
     target.addModuleDependency(moduleName, dep);
-    if (isNpm) {
-      target.addResource(dep);
-    } else { 
-      target.addModule(dep);
+    if (!isNpm) { 
+      target.addModule(file);
     }
 
     var tmp = tempVar('req');
@@ -295,12 +313,15 @@ class JsGenerator
   public function visitModuleStmt(stmt:Stmt.Module):String {
     var name = target.resolveModule(stmt.path);
     if (name == 'global') {
+      moduleName = null;
+      currentModule = [];
       append.push(stmt.exports.map(function (t) {
         return 'global.' + t.lexeme + ' = ' + t.lexeme + ';';
-      }).join(', '));
+      }).join('\n'));
       return null;
     }
     moduleName = name;
+    currentModule = stmt.path;
     append.push('module.exports = {' + stmt.exports.map(function (t) {
       return t.lexeme + ': ' + t.lexeme;
     }).join(', ') + '};');
@@ -362,14 +383,14 @@ class JsGenerator
     return name;
   }
 
-  private function addMeta(target:String, data:Map<String, Array<Expr>>) {
+  private function genMeta(target:String, data:Map<String, Array<Expr>>) {
     var out = '__quirk.addMeta(' + target + ', {';
     out += [ 
       for (key in data.keys()) 
         getIndent() + '"' + key + '": [' + data.get(key).map(getMetaEntry).join(', ') + ']' 
     ].join(', ');
     out += '});';
-    append.push(out);
+    return out;
   }
 
   private function getMetaEntry(expr:Expr) {

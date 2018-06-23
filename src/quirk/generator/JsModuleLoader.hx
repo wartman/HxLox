@@ -3,7 +3,6 @@ package quirk.generator;
 import sys.io.File;
 import sys.FileSystem;
 import quirk.Token;
-import quirk.ModuleLoader;
 
 using haxe.io.Path;
 
@@ -26,9 +25,30 @@ class JsModuleLoader implements ModuleLoader {
   }
 
   public function find(tokens:Array<Token>):String {
-    var first = tokens[0].lexeme;
     var parts = tokens.map(function (t) return t.lexeme);
     return parts.join('/');
+  }
+
+  public function findRelative(tokens:Array<Token>, relative:Array<Token>):String {
+    var parts = tokens.map(function (t) return t.lexeme);
+    var walkBack:Array<String> = [];
+    var relativePos = 0;
+    for (i in 0...relative.length - 1) {
+      if (tokens.length >= i) {
+        if (relative[i].lexeme != tokens[relativePos].lexeme) {
+          walkBack.push('..');
+        } else {
+          parts.shift();
+          relativePos++;
+        }
+      } else {
+        break;
+      }
+    }
+    if (walkBack.length == 0) {
+      return './' + parts.join('/');
+    }
+    return walkBack.concat(parts).join('/');
   }
 
   public function load(path:String):String {

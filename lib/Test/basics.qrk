@@ -1,4 +1,8 @@
-module Test.Basics for ArrayTest, ObjectTest, StringTest, LambdaTest
+module Test.Basics for 
+  ArrayTest,
+  ObjectTest,
+  StringTest,
+  LambdaTest
 
 import Std.Mirror for Reflect
 import Std.Test for Case
@@ -231,6 +235,20 @@ class LambdaTest : Case {
     // Both should work the same:
     this.assertEquals(tester('a', { it + 'b' }), 'ab')
     this.assertEquals(tester('a') { it + 'b' }, 'ab')
+  }
+
+}
+
+class FunTest : Case {
+
+  construct new() {
+    super.new()
+  }
+
+  @test('Callable')
+  testCall() {
+    var f = Fun.new { 'foo' }
+    this.assertEquals(f.call(this, []), 'foo')
   }
 
 }

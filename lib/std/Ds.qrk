@@ -1,0 +1,111 @@
+module Std.Ds for Map
+
+import Std.Mirror for Reflect
+
+/// A simple implementation of a Hash Map.
+class Map {
+
+  /// Create an empty map.
+  construct new() {
+    this._hashCounter = 0
+    this._entries = []
+  }
+
+  /// Create a `Map` from the given object.
+  construct ofObject(obj:Object) {
+    this.new()
+    Reflect.getFieldNames(obj).forEach {
+      this.set(it, obj[it])
+    }
+  }
+
+  /// Create a `Map` from an array of entries.
+  ///
+  /// An entry is simply an array consisting of two items of
+  /// any type. The first item will be used as a key, the second
+  /// as a value.
+  ///
+  /// ```
+  /// var example = Map.ofEntries([ ['foo', 'foo'], [1, 'bar'] ])
+  /// example.get('foo') // => 'foo'
+  /// example.get(1) // => 'bar'
+  /// ```
+  construct ofEntries(entries:Array) {
+    this.new()
+    entries.forEach { 
+      this.set(it[0], it[1]) 
+    }
+  }
+
+  /// Create a `Map` from an array of keys.
+  ///
+  /// The value of each key will be set to `true`.
+  construct ofKeys(keys:Array) {
+    this.new()
+    keys.forEach {
+      this.set(it, true)
+    }
+  }
+
+  count { this._entries.length }
+
+  keys { this._entries.map { it.key } }
+
+  values { this._entries.map { it.value } }
+
+  entries { this._entries.map { [ it.key, it.value ] } }
+
+  /// Create a copy of this `Map`.
+  clone() {
+    return Map.ofEntries(this.entries)
+  }
+
+  /// Get the value associated with the given key.
+  get(key) {
+    var hash = this.hash(key)
+    var entry = this._entries.find { it.hash == hash  }
+    if (entry == null) {
+      return null
+    }
+    return entry.value
+  }
+
+  /// Check if the given key exists.
+  has(key) {
+    var hash = this.hash(key)
+    return this._entries.find { it.hash == hash } != null
+  }
+
+  /// Set the value for the given key.
+  ///
+  /// Note that `key` may be ANY type, not just a `String` or `Int`.
+  set(key, value) {
+    var hash = this.hash(key)
+    this._entries = this._entries.filter { it.hash != hash }
+    this._entries.push({
+      hash: hash,
+      key: key,
+      value: value
+    })
+  }
+
+  /// Remove the value associated with the given key.
+  delete(key) {
+    var hash = this.hash(key)
+    this._entries = this._entries.filter { it.hash != hash }
+  }
+
+  /// Generate a hash for the given key.
+  hash(obj) {
+    if (Reflect.is(obj, String) || Reflect.is(obj, Int)) {
+      return obj
+    }
+    var hash = Reflect.getField(obj, '__quirk_hash')
+    if (hash == null) {
+      Reflect.setField(obj, '__quirk_hash', this._hashCounter = this._hashCounter + 1)
+      hash = Reflect.getField(obj, '__quirk_hash')
+    }
+    return hash
+  }
+
+}

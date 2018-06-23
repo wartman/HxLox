@@ -5,13 +5,11 @@ project {
 
   it.root = System.getCwd()
   it.name = 'Test'
-  it.src = 'test'
-  it.main = 'Main'
-  it.libs = {
-    Std: '${System.getCwd()}/std'
-  }
+  it.src = 'lib'
+  it.main = 'RunTest'
 
   it.sub {
+    it.name = 'Test Js'
     it.target = Target.js
     it.dst = 'bin/__js/test.js'
     it.after {
@@ -20,11 +18,16 @@ project {
   }
 
   // it.sub {
+  //   it.name = 'Test Node'
   //   it.target = Target.node
   //   it.dst = 'bin/__node'
+  //   it.after {
+  //     System.command('node ./bin/__node/RunTest.js', null)
+  //   }
   // }
 
   it.sub {
+    it.name = 'Test Interpret'
     it.target = Target.interpret
   }
 

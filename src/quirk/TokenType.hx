@@ -4,6 +4,7 @@ enum TokenType {
 
   // Single-character tokens
   TokAt;
+  TokSharp;
   TokLeftParen;
   TokRightParen;
   TokLeftBrace;
@@ -49,7 +50,6 @@ enum TokenType {
   TokThrow;
   TokTry;
   TokCatch;
-  TokSharp;
 
   // One or two character tokens
   TokBang;

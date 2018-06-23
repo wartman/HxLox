@@ -1,0 +1,31 @@
+module Quirk.Token for Token, TokenType, Position
+
+class Token {
+
+  construct new(type:TokenType, lexeme:String, literal:String, pos:Position) {
+    this.type = type
+    this.lexeme = lexeme
+    this.literal = literal
+    this.pos = pos 
+  }
+
+}
+
+class Position {
+
+  construct new(line:Int, offset:Int, file:String) {
+    this.line = line
+    this.offset = offset
+    this.file = file
+  }
+
+}
+
+enum TokenType {
+
+  // Single character
+  tokAt = 'tokAt'
+  tokSharp = 'tokSharp'
+  tokLeftParen = 'tokLeftParen'
+
+}

@@ -53,7 +53,7 @@ class MethodTypes {
   static foo() { return 'foo' }
 
   // Static getter
-  static bar { return this._bar }
+  static bar { this._bar }
 
   // Static setter
   static bar = value { this._bar = value }

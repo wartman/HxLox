@@ -16,7 +16,17 @@ class Primitives {
     arrayLiteral(interpreter);
     objectLiteral(interpreter);
     stringLiteral(interpreter);
+    funLiteral(interpreter);
     addPrimitives(interpreter);
+  }
+
+  private static function funLiteral(interpreter:Interpreter) {
+    interpreter
+      .addForeign('Fun#call(_,_)', function (args, f) {
+        var self:Instance = f.closure.values.get('this');
+        var cb:Function = self.fields.get('wrapped');
+        return cb.bind(args[0]).call(interpreter, args[1]);
+      });
   }
 
   private static function arrayLiteral(interpreter:Interpreter) {
@@ -42,6 +52,12 @@ class Primitives {
       })
       .addForeign('Array#join(_)', function (args, f) {
         return getValues(f).join(Std.string(args[0]));
+      })
+      .addForeign('Array#concat(_)', function (args, f) {
+        var arr:Instance = args[0];
+        var arrClass:Class = interpreter.globals.values.get('Array');
+        var concated = getValues(f).concat(arr.fields.get('values'));
+        return arrClass.construct('new', interpreter, [ concated ]);
       })
       .addForeign('Array#__length()', function (args, f) {
         return getValues(f).length;

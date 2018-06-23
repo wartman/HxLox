@@ -28,7 +28,7 @@ class Quirk {
   public static var hadError:Bool = false;
   public static var hadRuntimeError:Bool = false;
   public static var corePaths = [
-    'Std' => Path.join([ Sys.programPath(), '../../std' ]).normalize()
+    'Std' => Path.join([ Sys.programPath(), '../../lib/std' ]).normalize()
   ];
 
   public static function main() {

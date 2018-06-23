@@ -16,6 +16,8 @@ class Reflect {
 
   foreign static getConstructorNames(target)
 
+  foreign static setField(target, name, value)
+
   foreign static getField(target, name)
 
   foreign static getFieldNames(target)
@@ -37,14 +39,26 @@ class Reflect {
 class Meta {
   
   static getFields(target) {
-    var fields = {}
-    fields.__TYPE__ = Reflect.__getMetadata(Reflect.getClass(target))
+    var meta = {}
+    meta.__TYPE__ = Reflect.__getMetadata(Reflect.getClass(target))
     Reflect.getMethodNames(target).forEach {
       var method = Reflect.getMethod(target, it)
-      fields[it] = Reflect.__getMetadata(method)
+      meta[it] = Reflect.__getMetadata(method)
     }
-    // todo: need to merge with superclass
-    return fields
+
+    var sup = Reflect.getSuperclass(target)
+    if (sup != null) {
+      var supMeta = this.getFields(sup)
+      Reflect.getFieldNames(supMeta).forEach {
+        if (meta[it] != null) {
+          meta[it] = meta[it].concat(supMeta[it])
+        } else {
+          meta[it] = supMeta[it]
+        }
+      }
+    }
+
+    return meta
   }
   
   static getType(target) {

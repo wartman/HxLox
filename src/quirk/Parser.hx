@@ -615,9 +615,6 @@ class Parser {
         ignoreNewlines();
         consume(TokRightBracket, "Expect ']' after expression");
         expr = new Expr.SubscriptGet(previous(), expr, index);
-      // } else if (check(TokInterpolation)) {
-      //   // todo: tagged template
-      //   expr = taggedTemplate(expr);
       } else {
         break;
       }
@@ -702,6 +699,7 @@ class Parser {
     if (match([ TokTrue ])) return new Expr.Literal(true);
     if (match([ TokNull ])) return new Expr.Literal(null);
     if (match([ TokNumber, TokString ])) return new Expr.Literal(previous().literal);
+    // if (match([ TokSharp ])) {  }
 
     if (match([ TokInterpolation ])) { 
       return interpolation(new Expr.Literal(previous().literal));

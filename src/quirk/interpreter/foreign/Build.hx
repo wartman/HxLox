@@ -19,17 +19,7 @@ class Build {
     interpreter
       .addForeign('Std.Build.Project.buildJs(_)', function (args, f) {
         var settings:Instance = cast(args[0]);
-        var corePaths = Quirk.corePaths;
-        var libs:Map<String, String> = settings.fields.get('libs').fields;
-        for (key in corePaths.keys()) {
-          if (!libs.exists(key)) {
-            libs.set(key, corePaths.get(key));
-          }
-        }
-        var loader = new JsModuleLoader(
-          Path.join([Sys.getCwd(),Std.string(settings.fields.get('src'))]),
-          libs
-        );
+        var loader = getJsLoader(settings);
         var reporter = new VisualErrorReporter(loader);
         new JsTarget(
           Std.string(settings.fields.get('main')),
@@ -40,18 +30,15 @@ class Build {
         return null;
       })
       .addForeign('Std.Build.Project.buildNode(_)', function (args, f) {
-        throw 'not ready yet';
-
-        // var settings:Instance = cast(args[0]);
-        // new JsNodeTarget(
-        //   Std.string(settings.fields.get('main')),
-        //   new JsModuleLoader(
-        //     Path.join([Sys.getCwd(), Std.string(settings.fields.get('src'))]),
-        //     settings.fields.get('libs').fields
-        //   ),
-        //   new ModuleWriter(Path.join([Sys.getCwd(), Std.string(settings.fields.get('dst'))])),
-        //   interpreter.reporter
-        // ).write();
+        var settings:Instance = cast(args[0]);
+        var loader = getJsLoader(settings);
+        var reporter = new VisualErrorReporter(loader);
+        new JsNodeTarget(
+          Std.string(settings.fields.get('main')),
+          loader,
+          new ModuleWriter(Path.join([Sys.getCwd(), Std.string(settings.fields.get('dst'))])),
+          reporter
+        ).write();
         return null;
       })
       .addForeign('Std.Build.Project.buildPhp(_)', function (args, f) {
@@ -64,6 +51,20 @@ class Build {
         Quirk.run(root, path);
         return null;
       });
+  }
+
+  private static function getJsLoader(settings:Instance):JsModuleLoader {
+    var corePaths = Quirk.corePaths;
+    var libs:Map<String, String> = settings.fields.get('libs').fields;
+    for (key in corePaths.keys()) {
+      if (!libs.exists(key)) {
+        libs.set(key, corePaths.get(key));
+      }
+    }
+    return new JsModuleLoader(
+      Path.join([Sys.getCwd(),Std.string(settings.fields.get('src'))]),
+      libs
+    );
   }
 
 }

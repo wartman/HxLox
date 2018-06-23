@@ -1,0 +1,9 @@
+module global for Int, Bool
+
+class Int {
+  // Noop
+}
+
+class Bool {
+  // Noop
+}

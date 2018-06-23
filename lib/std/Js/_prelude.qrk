@@ -39,7 +39,9 @@ class __quirk {
   }
 
   static getClass(name) {
-    return this.classes[name].type
+    var entry = this.classes[name]
+    if (entry != null) return entry.type
+    return null
   }
 
   static getConstructors(name) {
@@ -109,10 +111,10 @@ class Environment {
 
 @core
 enum ModuleState {
-  Disabled
-  Pending
-  Enabling
-  Ready
+  Disabled = "Disabled"
+  Pending = "Pending"
+  Enabling = "Enabling"
+  Ready = "Ready"
 }
 
 @core

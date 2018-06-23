@@ -1,0 +1,42 @@
+module Quirk.Scanner for Scanner
+
+import Std.Compare for match
+import Quirk.Token for Token, TokenType, Position
+import Quirk.Error for ErrorReporter
+
+class Scanner {
+
+  construct new(source:String, file:String, reporter:ErrorReporter) {
+    this.source = source
+    this.file = file
+    this.reporter = reporter
+    
+    this.current = 0
+    this.start = 0
+    this.tokens = []
+    this.line = 1
+  }
+
+  isAtEnd:Bool { this.current >= this.source.length }
+
+  currentPos:Position { Position.new(this.line, this.current, this.file) }
+
+  scanTokens():Array {
+    while (!this.isAtEnd) {
+      this.start = this.current
+      this.scanToken()
+    }
+    this.tokens.push(Token.new(TokenType.eof, '', null, this.currentPos))
+    return this.tokens
+  }
+
+  scanToken() {
+    var c = this.advance()
+    match(c) {
+      it.is('(') { this.addToken(TokenType.leftParen) }
+      it.is(')') { this.addToken(TokenType.rightParen) }
+      // etc
+    }
+  }
+
+}

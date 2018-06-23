@@ -11,20 +11,26 @@ class Reflect {
   }
 
   static getClassName(target) {
-    if (_toString.call(target) == '[object Array]') {
+    if (target == null) {
+      return 'Null'
+    } else if (typeof(target) == 'number') {
+      return 'Int'
+    } else if (typeof(target) == 'boolean') {
+      return 'Bool'
+    } else if (_toString.call(target) == '[object Array]') {
       return 'Array'
     } else if (_toString.call(target) == '[object String]') {
       return 'String'
+    } else if (target.__name == null) {
+      return target.name // temp
     }
     // todo: more primitive checks
     return target.__name
   }
 
   static getSuperclass(target) {
-    if (target.prototype != null) {
-      return target.prototype.__super
-    }
-    return target.__super
+    var cls = this.getClass(target)
+    if (cls) return cls.__super
   }
 
   static is(a, b) {
@@ -64,12 +70,24 @@ class Reflect {
     return __quirk.getConstructors(this.getClassName(target))
   }
 
+  static setField(target, name, value) {
+    target[name] = value
+  }
+
   static getField(target, name) {
     return target[name]
   }
 
   static getFieldNames(target) {
     return Object.keys(target)
+  }
+
+  static callFunction(f, context, args) {
+    return f.apply(context, args)
+  }
+
+  static isArray(target) {
+    return _toString.call(target) == '[object Array]'
   }
 
   static isFunction(target) {
@@ -84,6 +102,14 @@ class Reflect {
     return typeof(target) == 'object'
   }
 
+  static isInt(target) {
+    return typeof(target) == 'number'
+  }
+
+  static isNull(target) {
+    return target == null
+  }
+
 }
 
 class Meta {
@@ -94,10 +120,15 @@ class Meta {
     var meta = __quirk.meta[name]
     
     if (meta == null) meta = {}
-
     if (sup != null) {
-      // todo: will need to handle deep merging
-      return Object.assign({}, this.getFields(sup), meta)
+      var supMeta = this.getFields(sup)
+      Reflect.getFieldNames(supMeta).forEach {
+        if (meta[it] != null) {
+          meta[it] = meta[it].concat(supMeta[it])
+        } else {
+          meta[it] = supMeta[it]
+        }
+      }
     }
 
     return meta

@@ -30,7 +30,8 @@ class Interpreter
   private var locals:Map<Expr, Int> = new Map();
   private var foreigns:Map<String, Foreign.ForeignMethod> = new Map();
   private var objectMappings:Map<String, String> = [
-    'String' => 'String'
+    'String' => 'String',
+    'Int' => 'Int'
   ];
 
   public function new(?loader:ModuleLoader, ?reporter:ErrorReporter) {
@@ -464,7 +465,7 @@ class Interpreter
   public function visitSubscriptGetExpr(expr:Expr.SubscriptGet):Dynamic {
     var object = evaluate(expr.object);
     var index = evaluate(expr.index);
-
+    
     if (Std.is(object, Instance)) {
       var obj:Instance = cast object;
       var method:Callable = obj.getClass().findMethod(object, '__offsetGet');

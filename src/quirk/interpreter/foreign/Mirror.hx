@@ -27,6 +27,22 @@ class Mirror {
       // if (Std.is(target, Callable)) {
       //   return '<callable>';
       // }
+      if (Std.is(target, Int)) {
+        var cls:Class = globals.values.get('Int');
+        return cls;
+      }
+      if (Std.is(target, Bool)) {
+        var cls:Class = globals.values.get('Bool');
+        return cls;
+      }
+      if (Std.is(target, String)) {
+        var cls:Class = globals.values.get('String');
+        return cls;
+      }
+      if (target == null) {
+        var cls:Class = globals.values.get('Null');
+        return cls;
+      }
       return null;
     }
     interpreter

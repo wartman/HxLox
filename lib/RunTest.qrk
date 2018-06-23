@@ -4,6 +4,7 @@ import Test.Syntax as Syntax
 import Test.Std.Mirror as Mirror 
 import Test.Std.HtmlBuilder for HtmlBuilderTest
 import Test.Std.RegExp for RegExpTest
+import Test.Std.Ds for MapTest
 
 var runner = Runner.new()
 
@@ -12,12 +13,12 @@ runner.
   add(Basics.ObjectTest.new()).
   add(Basics.StringTest.new()).
   add(Basics.LambdaTest.new()).
-  add(Syntax.FunTest.new()).
   add(Syntax.EnumTest.new()).
   add(Syntax.MethodTest.new()).
   add(Mirror.ReflectTest.new()).
   add(Mirror.MetaTest.new()).
   add(RegExpTest.new()).
-  add(HtmlBuilderTest.new())
+  add(HtmlBuilderTest.new()).
+  add(MapTest.new())
 
 runner.run()

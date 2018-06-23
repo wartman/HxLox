@@ -30,12 +30,21 @@ class Array {
 
   foreign join(glue)
 
+  foreign concat(arr)
+
   map(cb) {
     var out = []
     for (var i = 0; i < this.length; i = i + 1) {
       out.push(cb(this[i], i))
     }
     return out
+  }
+
+  find(cb) {
+    for (var i = 0; i < this.length; i = i + 1) {
+      if (cb(this[i])) return this[i]
+    }
+    return null
   }
 
   filter(cb) {
@@ -91,13 +100,30 @@ class String {
 
 }
 
-class RegExp {
-  
-  construct new(pattern, flags) {
-    this.pattern = pattern
-    this.flags = flags
-  }
+class Null {
 
-  // todo
+  // Noop
 
 }
+
+class Int {
+
+  // Noop
+
+}
+
+class Bool {
+
+  // Noop
+
+}
+
+// class Fun {
+
+//  construct new(wrappedFunction) {
+//    this.wrapped = wrappedFunction
+//  }
+
+//  foreign call(context, args)
+
+// }

@@ -17,7 +17,12 @@ class DefaultModuleLoader implements ModuleLoader {
   }
 
   public function find(tokens:Array<Token>):String {
-    return tokens.map(function (p) return p.lexeme).join('/');
+    var parts = tokens.map(function (p) return p.lexeme);
+    return parts.join('/');
+  }
+
+  public function findRelative(tokens:Array<Token>, relative:Array<Token>):String {
+    return find(tokens);
   }
 
   public function load(path:String):String {

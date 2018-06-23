@@ -1,8 +1,8 @@
 -main Quirk
 -cp src
 
--resource std/_primitives.qrk@primitives
--resource std/Js/_primitives.qrk@js:primitives
--resource std/Js/_prelude.qrk@js:prelude
+-resource lib/std/_primitives.qrk@primitives
+-resource lib/std/Js/_primitives.qrk@js:primitives
+-resource lib/std/Js/_prelude.qrk@js:prelude
 
 -neko bin/quirk.n

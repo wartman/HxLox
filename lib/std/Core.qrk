@@ -1,4 +1,4 @@
-module Std.Core for System
+module Std.Core for System, Error
 
 class System {
 
@@ -12,6 +12,14 @@ class System {
 
   static println(s) {
     this.print(s + '\n')
+  }
+
+}
+
+class Error {
+
+  construct new(message) {
+    this.message = message
   }
 
 }

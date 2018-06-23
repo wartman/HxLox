@@ -1,0 +1,65 @@
+module Test.Std.Ds for MapTest
+
+import Std.Test for Case
+import Std.Ds for Map
+
+class MapTest : Case {
+
+  construct new() {
+    super.new()
+  }
+
+  @before
+  setupMap() {
+    this.map = Map.new()
+  }
+
+  @test('The keys getter gets all keys')
+  testGetKeys() {
+    this.map.set('foo', 1)
+    this.map.set('bar', 2)
+    this.assertEquals(this.map.keys.length, 2)
+    this.assertEquals(this.map.keys.join(','), 'foo,bar')
+  }
+
+  @test('The entires getter gets entires')
+  testGetEntries() {
+    this.map.set('foo', 'value foo')
+    this.map.set('bar', 'value bar')
+    var keys = []
+    var values = []
+    // for ([ key, value ] in this.map.entries) {
+    for (entry in this.map.entries) {
+      keys.push(entry[0])
+      values.push(entry[1])
+    }
+    this.assertEquals(keys.join(','), 'foo,bar')
+    this.assertEquals(values.join(','), 'value foo,value bar')
+  }
+
+  @test('Works with string keys')
+  testStringKeys() {
+    this.map.set('foo', 'bar')
+    this.map.set('bin', 'bax')
+    this.assertEquals(this.map.get('foo'), 'bar')
+    this.assertEquals(this.map.get('bin'), 'bax')
+  }
+
+  @test('Works with Int keys')
+  testIntKeys() {
+    this.map.set(1, 'bar')
+    this.map.set(2, 'bax')
+    this.assertEquals(this.map.get(1), 'bar')
+    this.assertEquals(this.map.get(2), 'bax')
+  }
+
+  @test('Works with object keys')
+  testObjectKeys() {
+    var a = { a: 'a' }
+    this.map.set(a, 'bar')
+    this.map.set(MapTest, 'bax')
+    this.assertEquals(this.map.get(a), 'bar')
+    this.assertEquals(this.map.get(MapTest), 'bax')
+  }
+
+}

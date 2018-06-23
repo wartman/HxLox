@@ -1,4 +1,4 @@
-module Std.Core for System
+module Std.Core for System, Error
 
 /// `System` implementation for the js target
 class System {
@@ -33,6 +33,14 @@ class System {
       return process.cwd()
     }
     throw 'Not available on JS target'
+  }
+
+}
+
+class Error {
+
+  construct new(message) {
+    this.message = message
   }
 
 }

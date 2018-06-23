@@ -41,6 +41,21 @@ class ReflectTest : Case {
     ) 
   }
 
+  @test('Gets the class names of primitives')
+  testGetPrimitiveNames() {
+    this.assertEquals(Reflect.getClassName(1), Reflect.getClassName(Int))
+    this.assertEquals(Reflect.getClassName(false), Reflect.getClassName(Bool))
+    this.assertEquals(Reflect.getClassName(true), Reflect.getClassName(Bool))
+    this.assertEquals(Reflect.getClassName(null), 'Null')
+  }
+
+  @test('Compares primitives correctly')
+  testComparePrimitives() {
+    this.assertTrue(Reflect.is(true, Bool))
+    this.assertTrue(Reflect.is('foo', String))
+    //this.assertTrue(Reflect.is(1, Int))
+  }
+
   @test('Calls constructors correctly')
   testCallConstructors() {
     var def = Reflect.getConstructor(ReflectFixture, 'defaults')
@@ -52,12 +67,26 @@ class ReflectTest : Case {
     this.assertTrue(Reflect.is(nu('b'), ReflectFixture))
   }
 
+  @test('Sets and gets fields')
+  testSetAndGetField() {
+    var a = { a: 'aye' }
+    Reflect.setField(a, 'b', 'bee')
+    this.assertEquals(Reflect.getField(a, 'a'), 'aye')
+    this.assertEquals(Reflect.getField(a, 'b'), 'bee')
+    this.assertEquals(Reflect.getField(a, 'c'), null)
+  }
+
 }
 
 @foo
 @bar('value')
 class MetaFixture {
-  
+
+}
+
+@bin
+class MetaInheritedFixture : MetaFixture {
+
 }
 
 class MetaTest : Case {
@@ -76,6 +105,18 @@ class MetaTest : Case {
         this.assertEquals(it.values[0], 'value')
       }
     }
+  }
+
+  @test('Gets inherited metadata')
+  testInheritance() {
+    var meta = Meta.getType(MetaInheritedFixture)
+    var foo = meta.find { it.name == 'foo' }
+    var bar = meta.find { it.name == 'bar' }
+    var bin = meta.find { it.name == 'bin' }
+    this.assertEquals(meta.length, 3)
+    this.assertTrue(foo != null)
+    this.assertTrue(bar != null)
+    this.assertTrue(bin != null)
   }
 
 }

@@ -32,7 +32,11 @@ class BaseTarget implements Target {
     this.reporter = reporter;
   }
 
-  public function resolveModule(path:Array<Token>):String {
+  public function resolveModule(path:Array<Token>, ?currentModule:Array<Token>):String {
+    return loader.find(path);
+  }
+
+  public function resolveFile(path:Array<Token>):String {
     return loader.find(path);
   }
 
