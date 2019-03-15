@@ -10,12 +10,12 @@ import Std.Mirror for Reflect, Meta
 class Runner {
 
   construct new() {
-    this.result = Result.new()
-    this.cases = []
+    #result = Result.new()
+    #cases = []
   }
 
   add(c) {
-    this.cases.push(c)
+    #cases.push(c)
     return this
   }
 
@@ -24,10 +24,10 @@ class Runner {
   }
 
   run() {
-    this.result = Result.new()
-    this.cases.forEach { this.runCase(it) }
-    this.print(this.result.toString())
-    return this.result.wasSuccessful()
+    #result = Result.new()
+    #cases.forEach { this.runCase(it) }
+    this.print(#result.toString())
+    return #result.wasSuccessful()
   }
 
   runCase(c) {
@@ -54,7 +54,7 @@ class Runner {
 
         try {
           method()
-          if (c.currentTest.isDone()) {
+          if (c.currentTest.done) {
             c.currentTest.success = true
             this.print('.')
           } else {
@@ -72,7 +72,7 @@ class Runner {
         }
 
         after.forEach { it() }
-        this.result.add(c.currentTest)
+        #result.add(c.currentTest)
       }
     }
 
@@ -103,42 +103,42 @@ class Runner {
 class Result {
 
   construct new() {
-    this.tests = []
-    this.failures = 0
-    this.success = true
+    #tests = []
+    #failures = 0
+    #success = true
   }
 
   add(status) {
-    this.tests.push(status)
+    #tests.push(status)
     if (status.success == false) {
-      this.success = false
+      #success = false
     }
   }
 
   wasSuccessful() {
-    return this.success
+    return #success
   }
 
   toString() {
     var out = ""
-    for (var i = 0; i < this.tests.length; i = i + 1) {
-      var test = this.tests[i]
+    for (var i = 0; i < #tests.length; i = i + 1) {
+      var test = #tests[i]
       if (test.success == false) {
         out = out + "* " + test.className + "::" + test.methodName + "()\n"
         out = out + "ERR: " + test.error + "\n"
-        this.failures = this.failures + 1
+        #failures = #failures + 1
       }
     }
 
     out = out + "\n"
-    if (this.failures == 0) {
+    if (#failures == 0) {
       out = out + 'OK '
     } else {
       out = out + 'FAILED '
     }
-    out = out + this.tests.length + ' tests, ' +
-      this.failures + ' failed, ' +
-      (this.tests.length - this.failures) + ' success \n'
+    out = out + #tests.length + ' tests, ' +
+      #failures + ' failed, ' +
+      (#tests.length - #failures) + ' success \n'
 
     return out
   }
@@ -148,19 +148,26 @@ class Result {
 class Status {
 
   construct new(className, methodName) {
-    this.className = className
-    this.methodName = methodName
-    this.success = false
-    this.error = null
-    this.done = false
+    #className = className
+    #methodName = methodName
+    #success = false
+    #error = null
+    #done = false
   }
+
+  className { #className }
+  methodName { #methodName }
+  
+  success { #success }
+  success = value { #success = value }
+
+  error { #error }
+  error = value { #error = value }
+
+  done { #done }
 
   markDone() {
-    this.done = true
-  }
-
-  isDone() {
-    return this.done
+    #done = true
   }
 
 }
@@ -168,33 +175,36 @@ class Status {
 class Case {
 
   construct new() {
-    this.currentTest = Status.new(Reflect.getClassName(this), null)
+    #currentTest = Status.new(Reflect.getClassName(this), null)
   }
 
+  currentTest { #currentTest }
+  currentTest = value { #currentTest = value }
+
   assertTrue(value) {
-    this.currentTest.done = true
+    #currentTest.markDone()
     if (value != true) {
-      this.currentTest.success = false
-      this.currentTest.error = "Expected true but was false"
-      throw this.currentTest
+      #currentTest.success = false
+      #currentTest.error = "Expected true but was false"
+      throw #currentTest
     }
   }
 
   assertFalse(value) {
-    this.currentTest.done = true
+    #currentTest.markDone()
     if (value != false) {
-      this.currentTest.success = false
-      this.currentTest.error = "Expected false but was true"
-      throw this.currentTest
+      #currentTest.success = false
+      #currentTest.error = "Expected false but was true"
+      throw #currentTest
     }
   }
 
   assertEquals(actual, expected) {
-    this.currentTest.done = true
+    #currentTest.markDone()
     if (expected != actual) {
-      this.currentTest.success = false
-      this.currentTest.error = "Expected '" + expected + "' but was '" + actual + "'"
-      throw this.currentTest
+      #currentTest.success = false
+      #currentTest.error = "Expected '" + expected + "' but was '" + actual + "'"
+      throw #currentTest
     }
   }
 

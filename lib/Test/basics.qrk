@@ -15,7 +15,7 @@ class ArrayTest : Case {
 
   @test('Ensure push works')
   testPush() {
-    var arr = [ 1, 2, 3 ]
+    var arr = [ 1, 2, 3 ] 
     arr.push(4)
     this.assertEquals(arr.length, 4)
     this.assertEquals(arr[3], 4)

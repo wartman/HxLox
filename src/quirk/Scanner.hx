@@ -77,7 +77,7 @@ class Scanner {
       case ':': addToken(TokColon);
       case '*': addToken(TokStar);
       case '@': addToken(TokAt);
-      // case '#': addToken(TokSharp);
+      case '#': addToken(TokSharp);
       case '!': addToken(match('=') ? TokBangEqual : TokBang);
       case '=': addToken(match('=') ? TokEqualEqual : TokEqual);
       case '<': addToken(match('=') ? TokLessEqual : TokLess);
@@ -196,6 +196,8 @@ class Scanner {
       }
     }
     start = current;
+    depth = depth - 1;
+    
     // Continue parsing.
     string(quote, depth);
   }

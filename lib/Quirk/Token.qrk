@@ -1,8 +1,8 @@
-module Quirk.Token for Token, TokenType, Position
+module Quirk.token for token, tokenType, Position
 
-class Token {
+class token {
 
-  construct new(type:TokenType, lexeme:String, literal:String, pos:Position) {
+  construct new(type:tokenType, lexeme:String, literal:String, pos:Position) {
     this.type = type
     this.lexeme = lexeme
     this.literal = literal
@@ -21,11 +21,86 @@ class Position {
 
 }
 
-enum TokenType {
+enum tokenType {
 
   // Single character
   tokAt = 'tokAt'
   tokSharp = 'tokSharp'
   tokLeftParen = 'tokLeftParen'
+  tokRightParen = "tokRightParen"
+  tokLeftBrace = "tokLeftBrace"
+  tokRightBrace = "tokRightBrace"
+  tokLeftBracket = "tokLeftBracket"
+  tokRightBracket = "tokRightBracket"
+  tokPipe = "tokPipe"
+  tokComma = "tokComma"
+  tokDot = "tokDot"
+  tokMinus = "tokMinus"
+  tokPlus = "tokPlus"
+  tokColon = "tokColon"
+  tokSemicolon = "tokSemicolon"
+  tokNewline = "tokNewline"
+  tokSlash = "tokSlash"
+  tokStar = "tokStar"
+  tokBoolAnd = "tokBoolAnd"
+  tokAnd = "tokAnd"
+  tokBoolOr = "tokBoolOr"
+
+  // Keywords
+  tokClass = "tokClass"
+  tokEnum = "tokEnum"
+  tokForeign = "tokForeign"
+  tokStatic = "tokStatic"
+  tokConstruct = "tokConstruct"
+  tokFalse = "tokFalse"
+  tokElse = "tokElse"
+  tokFun = "tokFun"
+  tokFor = "tokFor"
+  tokIf = "tokIf"
+  tokNull = "tokNull"
+  tokReturn = "tokReturn"
+  tokSuper = "tokSuper"
+  tokThis = "tokThis"
+  tokTrue = "tokTrue"
+  tokVar = "tokVar"
+  tokWhile = "tokWhile"
+  tokImport = "tokImport"
+  tokModule = "tokModule"
+  tokAs = "tokAs"
+  tokIn = "tokIn"
+  tokThrow = "tokThrow"
+  tokTry = "tokTry"
+  tokCatch = "tokCatch"
+
+  // One or two character tokens
+  tokBang = "tokBang"
+  tokBangEqual = "tokBangEqual"
+  tokEqual = "tokEqual"
+  tokEqualEqual = "tokEqualEqual"
+  tokGreater = "tokGreater"
+  tokGreaterEqual = "tokGreaterEqual"
+  tokLess = "tokLess"
+  tokLessEqual = "tokLessEqual"
+  tokRange = "tokRange" // ..
+  // tokPlusEqual = "tokPlusEqual"
+
+  // Other
+  tokTemplateTag = "tokTemplateTag"
+  tokIdentifier = "tokIdentifier"
+  tokString = "tokString"
+  tokNumber = "tokNumber"
+
+  // Interpolated strings, like `"foo ${bar}"`, are parsed
+  // as if they were written `"foo" + bar`. For example, the
+  // token stream for `"foo ${bar} bin"` would look like:
+  // 
+  //  tokInterpolation // -> "foo"
+  //  tokIdentifier // -> bar
+  //  tokString // -> "bin"
+  //
+  tokInterpolation = "tokInterpolation"
+
+  // End of File
+  tokEof = "tokEof"
 
 }

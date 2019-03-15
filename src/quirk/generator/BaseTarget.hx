@@ -7,9 +7,6 @@ import quirk.Parser;
 import quirk.ErrorReporter;
 import quirk.ModuleLoader;
 
-using sys.io.File;
-using sys.FileSystem;
-using haxe.io.Path;
 using Lambda;
 
 class BaseTarget implements Target {

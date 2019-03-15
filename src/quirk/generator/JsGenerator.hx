@@ -2,8 +2,6 @@ package quirk.generator;
 
 import quirk.Expr;
 import quirk.Stmt;
-import quirk.ErrorReporter;
-import quirk.ModuleLoader;
 import quirk.ExprVisitor;
 import quirk.StmtVisitor;
 
@@ -38,12 +36,16 @@ class JsGenerator
   }
 
   public function generate(stmts:Array<Stmt>):String {
-    return stmts.map(generateStmt).filter(function (s) {
-      return s != null;
-    }).concat(this.append).join('\n');
+    var out:Array<String> = [];
+    for (stmt in stmts) {
+      var s = generateStmt(stmt);
+      if (s != null && s != '') out.push(s);
+    }
+    return out.concat(this.append).join('\n');
   }
   
-  private function generateStmt(stmt:Stmt):String {
+  private function generateStmt(stmt:Null<Stmt>):String {
+    if (stmt == null) return '';
     return stmt.accept(this);
   }
 

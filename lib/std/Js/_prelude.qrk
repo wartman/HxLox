@@ -6,24 +6,24 @@ module global for __quirk
 class __quirk {
 
   static env {
-    if (this._env == null) {
-      this._env = Environment.new()
+    if (#env == null) {
+      #env = Environment.new()
     }
-    return this._env
+    return #env
   }
 
   static classes {
-    if (this._classes == null) {
-      this._classes = {}
+    if (#classes == null) {
+      #classes = {}
     }
-    return this._classes
+    return #classes
   }
 
   static meta {
-    if (this._meta == null) {
-      this._meta = {}
+    if (#meta == null) {
+      #meta = {}
     }
-    return this._meta
+    return #meta
   }
   
   static extend(obj, superclass) {
@@ -60,12 +60,14 @@ class __quirk {
 class Environment {
   
   construct new() {
-    this.modules = {}
+    #modules = {}
   }
+
+  modules { #modules }
 
   define(name, deps, factory) {
     var mod = Module.new(this, deps, factory)
-    this.modules[name] = mod
+    #modules[name] = mod
     return mod
   }
   
@@ -91,7 +93,7 @@ class Environment {
     }
     
     deps.forEach {
-      var mod = this.modules[it]
+      var mod = #modules[it]
       if (mod) {
         mod.onReady(onReady)
         mod.enable()
@@ -121,42 +123,45 @@ enum ModuleState {
 class Module {
   
   construct new(env, deps, factory) {
-    this.env = env
-    this.deps = deps
-    this.factory = {
-      factory({ this.require(it) }, this, this.exports)
+    #env = env
+    #deps = deps
+    #exports = {}
+    #factory = {
+      factory({ this.require(it) }, this, #exports)
     }
-    this.state = ModuleState.Pending
-    this.exports = {}
-    this.onReadyListeners = []
-    this.onFailedListeners = []
+    #state = ModuleState.Pending
+    #onReadyListeners = []
+    #onFailedListeners = []
   }
   
+  exports { #exports }
+  exports = value { #exports = value }
+
   require(dep) {
-    return this.env.modules[dep].exports
+    return #env.modules[dep].exports
   }
   
   onReady(cb) {
-    if (this.state == ModuleState.Ready) {
+    if (#state == ModuleState.Ready) {
       cb()
-      if (this.onReadyListeners.length > 0) {
-        this.dispatchListeners(this.onReadyListeners)
+      if (#onReadyListeners.length > 0) {
+        this.dispatchListeners(#onReadyListeners)
       }
       return this
     }
-    this.onReadyListeners.push(cb)
+    #onReadyListeners.push(cb)
     return this
   }
   
   onFailed (cb) {
-    if (this.state == ModuleState.Disabled) {
+    if (#state == ModuleState.Disabled) {
       cb()
-      if (this.onFailedListeners.length > 0) {
-        this.dispatchListeners(this.onFailedListeners)
+      if (#onFailedListeners.length > 0) {
+        this.dispatchListeners(#onFailedListeners)
       }
       return this
     }
-    this.onFailedListeners.push(cb)
+    #onFailedListeners.push(cb)
     return this
   }
   
@@ -169,22 +174,22 @@ class Module {
   }
 
   enable() {
-    if (this.state != ModuleState.Pending) {
+    if (#state != ModuleState.Pending) {
       return this
     }
-    this.state = ModuleState.Enabling
+    #state = ModuleState.Enabling
     var finish = {
-      this.factory()
-      this.state = ModuleState.Ready
-      this.dispatchListeners(this.onReadyListeners)
+      #factory()
+      #state = ModuleState.Ready
+      this.dispatchListeners(#onReadyListeners)
     }
-    if (this.deps.length == 0) {
+    if (#deps.length == 0) {
       finish()
     } else {
-      this.env.loadModules(this.deps) { |err|
+      #env.loadModules(#deps) { |err|
         if (err != null) {
-          this.state = ModuleState.Disabled
-          this.dispatchListeners(this.onFailedListeners)
+          #state = ModuleState.Disabled
+          this.dispatchListeners(#onFailedListeners)
           return
         }
         finish()

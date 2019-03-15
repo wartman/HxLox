@@ -46,8 +46,8 @@ class Project {
   foreign static interpret(settings)
 
   construct new(settings) {
-    this.settings = settings
-    this.afterListeners = []
+    #settings = settings
+    #afterListeners = []
   }
 
   construct default() {
@@ -63,57 +63,60 @@ class Project {
     })
   }
 
+  settings { #settings }
+  afterListeners { #afterListeners }
+
   root = value {
-    this.settings.root = value
+    #settings.root = value
   }
 
   main = value {
-    this.settings.main = value
+    #settings.main = value
   }
 
   name = value {
-    this.settings.name = value
+    #settings.name = value
   }
 
   src = value {
-    this.settings.src = value
+    #settings.src = value
   }
 
   dst = value {
-    this.settings.dst = value
+    #settings.dst = value
   }
 
   target = value {
-    this.settings.target = value
+    #settings.target = value
   }
 
   libs = value {
     Reflect.getFieldNames(value).forEach {
-      this.settings.libs[it] = value[it]
+      #settings.libs[it] = value[it]
     }
   }
 
   resources = value {
     Reflect.getFieldNames(value).forEach {
-      this.settings.resources[it] = value[it]
+      #settings.resources[it] = value[it]
     }
   }
 
   /// Add listeners to run after building
   after(cb) {
-    this.afterListeners.push(cb)
+    #afterListeners.push(cb)
   }
 
   /// Add a sub-target
   sub(cb) {
     var newSettings = {}
-    Reflect.getFieldNames(this.settings).forEach { 
-      newSettings[it] = this.settings[it]
+    Reflect.getFieldNames(#settings).forEach { 
+      newSettings[it] = #settings[it]
     }
     newSettings.targets = []
     var p = Project.new(newSettings)
     cb(p)
-    this.settings.targets.push(p)
+    #settings.targets.push(p)
   }
 
 }

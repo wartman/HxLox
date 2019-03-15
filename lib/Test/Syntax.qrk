@@ -53,10 +53,10 @@ class MethodTypes {
   static foo() { return 'foo' }
 
   // Static getter
-  static bar { this._bar }
+  static bar { #bar }
 
   // Static setter
-  static bar = value { this._bar = value }
+  static bar = value { #bar = value }
 
   // Instance
   fooBar(a) { return a + 'foo' }
@@ -107,10 +107,8 @@ class MethodTest : Case {
   @test('Static getter and setter works')
   testStaticGetterAndSetter() {
     this.assertEquals(MethodTypes.bar, 'bin')
-    this.assertEquals(MethodTypes.bar, MethodTypes._bar)
     MethodTypes.bar = 'changed'
     this.assertEquals(MethodTypes.bar, 'changed')
-    this.assertEquals(MethodTypes.bar, MethodTypes._bar)
   }
 
   @test('Getter and setter works')

@@ -97,6 +97,11 @@ class Resolver
     });
   }
 
+  public function visitSetExpr(expr:Expr.Set):Void {
+    resolveExpr(expr.value);
+    resolveExpr(expr.object);
+  }
+
   public function visitGetExpr(expr:Expr.Get):Void {
     resolveExpr(expr.object);
   }
@@ -112,11 +117,6 @@ class Resolver
   public function visitLogicalExpr(expr:Expr.Logical):Void {
     resolveExpr(expr.left);
     resolveExpr(expr.right);
-  }
-
-  public function visitSetExpr(expr:Expr.Set):Void {
-    resolveExpr(expr.value);
-    resolveExpr(expr.object);
   }
 
   public function visitSubscriptGetExpr(expr:Expr.SubscriptGet):Void {

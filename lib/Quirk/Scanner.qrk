@@ -39,4 +39,10 @@ class Scanner {
     }
   }
 
+  addToken(type, literal) {
+    var text = this.source.substring(this.start, this.current)
+    var pos = Position.new(this.line, this.current, this.file)
+    this.tokens.push(Token.new(type, text, literal, pos))
+  }
+
 }

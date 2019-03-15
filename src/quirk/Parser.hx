@@ -699,7 +699,18 @@ class Parser {
     if (match([ TokTrue ])) return new Expr.Literal(true);
     if (match([ TokNull ])) return new Expr.Literal(null);
     if (match([ TokNumber, TokString ])) return new Expr.Literal(previous().literal);
-    // if (match([ TokSharp ])) {  }
+    
+    // Somewhat hacky :P
+    // For now, we just convert `#` to this, more or less, and mundge 
+    // the name of the field.
+    //
+    // Todo: actually make private?
+    if (match([ TokSharp ])) {
+      var obj = new Expr.This(new Token(TokThis, 'this', '#', previous().pos));
+      var name = consume(TokIdentifier, "Expect an identifier after a sharp");
+      name.lexeme = '__PRIVATE_' + name.lexeme;
+      return new Expr.Get(obj, name);
+    }
 
     if (match([ TokInterpolation ])) { 
       return interpolation(new Expr.Literal(previous().literal));
