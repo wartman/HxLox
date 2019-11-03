@@ -224,9 +224,9 @@ class Parser {
     var expr:Expr = and();
 
     while (match([ TokOr ])) {
-      var operator = previous();
+      var operation = previous();
       var right = and();
-      expr = new Expr.Logical(expr, operator, right);
+      expr = new Expr.Logical(expr, operation, right);
     }
 
     return expr;
@@ -236,9 +236,9 @@ class Parser {
     var expr:Expr = equality();
 
     while (match([ TokAnd ])) {
-      var operator = previous();
+      var operation = previous();
       var right = equality();
-      expr = new Expr.Logical(expr, operator, right);
+      expr = new Expr.Logical(expr, operation, right);
     }
 
     return expr;
