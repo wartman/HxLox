@@ -24,7 +24,7 @@ enum TokenType {
   TokFun;
   TokFor;
   TokIf;
-  TokNull;
+  TokNil;
   TokOr;
   TokPrint;
   TokReturn;

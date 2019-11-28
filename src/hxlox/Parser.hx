@@ -339,7 +339,7 @@ class Parser {
   private function primary():Expr {
     if (match([ TokFalse ])) return new Expr.Literal(false);
     if (match([ TokTrue ])) return new Expr.Literal(true);
-    if (match([ TokNull ])) return new Expr.Literal(null);
+    if (match([ TokNil ])) return new Expr.Literal(null);
 
     if (match([ TokNumber, TokString ])) {
       return new Expr.Literal(previous().literal);

@@ -1,7 +1,6 @@
 package hxlox.interpreter;
 
 import hxlox.Expr;
-import hxlox.TokenType;
 import hxlox.ExprVisitor;
 import hxlox.StmtVisitor;
 
@@ -126,7 +125,7 @@ class Interpreter
 
   public function visitPrintStmt(stmt:Stmt.Print):Dynamic {
     var out = evaluate(stmt.expression);
-    Sys.println(Std.string(out));
+    Sys.println(stringify(out));
     return null;
   }
 
@@ -139,7 +138,7 @@ class Interpreter
     return null;
   }
 
-  public function visitAssignExpr(expr:Expr.Assign) {
+  public function visitAssignExpr(expr:Expr.Assign):Dynamic {
     var value = evaluate(expr.value);
     var distance = locals.get(expr);
     if (distance != null) {
@@ -208,14 +207,14 @@ class Interpreter
     }
   }
 
-  public function visitVariableExpr(expr:Expr.Variable) {
+  public function visitVariableExpr(expr:Expr.Variable):Dynamic {
     return lookUpVariable(expr.name, expr);
   }
 
   public function visitBinaryExpr(expr:Expr.Binary):Dynamic {
-    var left = evaluate(expr.left);
+    var left :Dynamic = evaluate(expr.left);
     var op = expr.op;
-    var right = evaluate(expr.right);
+    var right :Dynamic = evaluate(expr.right);
 
     return switch(op.type) {
       case TokMinus: 
@@ -227,14 +226,11 @@ class Interpreter
       case TokStar: 
         checkNumberOperands(op, left, right);
         left * right;
-      case TokPlus: 
-        if (Std.is(left, Int) && Std.is(right, Int)) {
-          left + right;
-        } else if (Std.is(left, String) && Std.is(right, String)) {
-          left + right;
-        } else {
-          throw new RuntimeError(op, 'Operands must be two numbers or two strings.');
+      case TokPlus:
+        if ((Std.is(left, Float) || Std.is(left, String)) && (Std.is(right, Float) || Std.is(right, String))) {
+            return left + right;
         }
+        return new RuntimeError(expr.op, "Operands cannot be concatinated.");
       case TokGreater: 
         checkNumberOperands(op, left, right);
         left > right;
@@ -295,21 +291,21 @@ class Interpreter
   }
 
   private function stringify(obj:Dynamic) {
-    if (obj == null) return 'null';
+    if (obj == null) return 'nil';
     return Std.string(obj);
   }
 
   private function checkNumberOperand(op:Token, operand:Dynamic) {
-    if (Std.is(operand, Int)) return;
+    if (Std.is(operand, Float)) return;
     throw new RuntimeError(op, 'Operand must be a number.');
   }
 
   private function checkNumberOperands(op:Token, left:Dynamic, right:Dynamic) {
-    if (Std.is(left, Int) && Std.is(right, Int)) return;
+    if (Std.is(left, Float) && Std.is(right, Float)) return;
     throw new RuntimeError(op, 'Operand must be a number.');
   }
 
-  private function lookUpVariable(name:Token, expr:Expr) {
+  private function lookUpVariable(name:Token, expr:Expr):Dynamic {
     var distance = locals.get(expr);
     if (distance != null) {
       return environment.getAt(distance, name.lexeme);

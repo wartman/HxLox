@@ -1,7 +1,6 @@
 package;
 
 import sys.io.File;
-import hxlox.Token;
 import hxlox.Parser;
 import hxlox.Scanner;
 import hxlox.interpreter.RuntimeError;

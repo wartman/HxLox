@@ -56,10 +56,10 @@ class Resolver
     if (currentFunction.equals(FunNone)) {
       HxLox.error(stmt.keyword, "Cannot return from top-level code.");
     }
-    if (currentFunction.equals(FunInitializer)) {
-      HxLox.error(stmt.keyword, "Cannot return a value from an initializer");
-    }
     if (stmt.value != null) {
+      if (currentFunction.equals(FunInitializer)) {
+        HxLox.error(stmt.keyword, "Cannot return a value from an initializer");
+      }
       resolveExpr(stmt.value);
     }
   }

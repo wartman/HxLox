@@ -12,7 +12,7 @@ class Scanner {
     "fun" => TokFun,
     "for" => TokFor,
     "if" => TokIf,
-    "null" => TokNull,
+    "nil" => TokNil,
     "or" => TokOr,
     "print" => TokPrint,
     "return" => TokReturn,
