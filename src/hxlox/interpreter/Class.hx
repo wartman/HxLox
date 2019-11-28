@@ -38,7 +38,7 @@ class Class implements Callable {
   }
 
   public function toString() {
-    return this.name;
+    return name;
   }
 
 }

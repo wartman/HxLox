@@ -12,7 +12,10 @@ class Clock implements Callable {
   }
 
   public function call(interpreter:Interpreter, arguments:Array<Dynamic>):Dynamic {
-    return Sys.cpuTime() / 1000.0;
+    return (Sys.cpuTime() * 1000.0);
   }
 
+  public function toString():String {
+    return "<native function>";
+  }
 }

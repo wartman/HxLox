@@ -26,8 +26,8 @@ class Instance {
     fields.set(name.lexeme, value);
   }
 
-  public function toString() {
-    return '${this.cls.name} instance';
+  public function toString():String {
+    return '${cls.name} instance';
   }
 
 }
